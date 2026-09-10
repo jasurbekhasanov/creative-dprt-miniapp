@@ -11,8 +11,13 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Frontend (Telegram Mini App) statik fayllarini shu serverdan beramiz
-app.use(express.static(path.join(__dirname, "..", "frontend")));
+// Frontend (Telegram Mini App) statik fayllarini shu papkaning o'zidan beramiz
+app.use(express.static(__dirname));
+
+// Root "/" uchun index.html'ni aniq beramiz (static middleware ishlamay qolsa ham)
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "index.html"));
+});
 
 // ---- Konfiguratsiya (environment variables orqali) ----
 const NOTION_TOKEN = process.env.NOTION_TOKEN;
@@ -216,4 +221,13 @@ app.get("/api/board", async (req, res) => {
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server ${PORT}-portda ishga tushdi`);
+  // Diagnostika: shu papkada qanday fayllar bor?
+  const fs = require("fs");
+  try {
+    const files = fs.readdirSync(__dirname);
+    console.log("__dirname:", __dirname);
+    console.log("Papkadagi fayllar:", files.join(", "));
+  } catch (e) {
+    console.log("Papkani o'qishда xato:", e.message);
+  }
 });
