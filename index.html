@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>Creative Dprt — Vazifalar</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  :root {
+    --bg: #0f0f11;
+    --surface: #18181b;
+    --surface-2: #212125;
+    --border: #2a2a2f;
+    --text: #f2f2f0;
+    --text-dim: #9a9a9f;
+    --accent: #e8a33d;
+
+    --col-draft: #6b6b70;
+    --col-goya: #a875e8;
+    --col-tasdiq: #e0b93c;
+    --col-dizayn: #4d8fe0;
+    --col-artdir: #b5773f;
+    --col-mijoz: #e0629b;
+    --col-finish: #4caf6e;
+    --col-archive: #4a4a4f;
+
+    --prio-urgent: #e05c4d;
+    --prio-high: #e0b93c;
+    --prio-normal: #4d8fe0;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  #app {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  header {
+    padding: 16px 16px 12px;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    background: var(--bg);
+    z-index: 10;
+  }
+
+  header h1 {
+    font-size: 17px;
+    font-weight: 600;
+    margin: 0 0 2px;
+    letter-spacing: -0.01em;
+  }
+
+  header .subtitle {
+    font-size: 13px;
+    color: var(--text-dim);
+    margin: 0;
+  }
+
+  #tabs {
+    display: flex;
+    overflow-x: auto;
+    gap: 6px;
+    padding: 12px 16px;
+    scrollbar-width: none;
+  }
+  #tabs::-webkit-scrollbar { display: none; }
+
+  .tab {
+    flex: 0 0 auto;
+    padding: 7px 13px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .tab.active {
+    background: var(--surface-2);
+    color: var(--text);
+    border-color: currentColor;
+  }
+  .tab .dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    flex: 0 0 auto;
+  }
+  .tab .count {
+    font-size: 11px;
+    color: var(--text-dim);
+    background: var(--bg);
+    padding: 1px 6px;
+    border-radius: 10px;
+  }
+
+  #cards {
+    flex: 1;
+    padding: 4px 16px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--status-color, var(--border));
+    border-radius: 10px;
+    padding: 12px 14px;
+    text-decoration: none;
+    color: inherit;
+    display: block;
+  }
+
+  .card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+
+  .card-title {
+    font-size: 14.5px;
+    font-weight: 600;
+    line-height: 1.35;
+  }
+
+  .prio {
+    flex: 0 0 auto;
+    font-size: 10.5px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+  }
+
+  .card-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    font-size: 12.5px;
+    color: var(--text-dim);
+  }
+
+  .card-meta .item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .card-meta .deadline.overdue {
+    color: var(--prio-urgent);
+    font-weight: 600;
+  }
+
+  #empty, #loading, #error {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 8px;
+    padding: 40px 24px;
+    text-align: center;
+    color: var(--text-dim);
+    font-size: 14px;
+  }
+
+  #error { color: var(--prio-urgent); }
+
+  .spinner {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: 2.5px solid var(--border);
+    border-top-color: var(--accent);
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1 id="header-title">Creative Dprt</h1>
+    <p class="subtitle" id="header-subtitle">Yuklanmoqda...</p>
+  </header>
+  <div id="tabs"></div>
+  <div id="cards"></div>
+</div>
+
+<script>
+const tg = window.Telegram?.WebApp;
+tg?.ready();
+tg?.expand();
+
+const STATUS_META = {
+  "Draft":           { label: "Draft",           color: "var(--col-draft)" },
+  "G'oya kerak":     { label: "G'oya kerak",     color: "var(--col-goya)" },
+  "Tasdiqlanyapti":  { label: "Tasdiqlanyapti",  color: "var(--col-tasdiq)" },
+  "Dizaynda":        { label: "Dizaynda",        color: "var(--col-dizayn)" },
+  "Art direktorda":  { label: "Art direktorda",  color: "var(--col-artdir)" },
+  "Mijozda":         { label: "Mijozda",         color: "var(--col-mijoz)" },
+  "Finish":          { label: "Finish",          color: "var(--col-finish)" },
+  "Archive":         { label: "Archive",         color: "var(--col-archive)" },
+};
+
+const PRIO_META = {
+  "Urgent 🔥": { color: "var(--prio-urgent)", bg: "rgba(224,92,77,0.15)" },
+  "High 🥵":   { color: "var(--prio-high)",   bg: "rgba(224,185,60,0.15)" },
+  "Normal":    { color: "var(--prio-normal)", bg: "rgba(77,143,224,0.15)" },
+};
+
+// Frontend va backend bitta serverda ishlaydi, shuning uchun nisbiy yo'l yetarli
+const API_BASE = "";
+
+let currentStatus = null;
+let boardData = null;
+
+function getTelegramUsername() {
+  const u = tg?.initDataUnsafe?.user?.username;
+  if (u) return u;
+  // Test uchun: URL query orqali ?username=xxx berish mumkin
+  const params = new URLSearchParams(window.location.search);
+  return params.get("username") || "";
+}
+
+function formatDeadline(dateStr) {
+  if (!dateStr) return null;
+  const d = new Date(dateStr);
+  const now = new Date();
+  const isOverdue = d < new Date(now.toDateString());
+  const formatted = d.toLocaleDateString("uz-UZ", { day: "numeric", month: "short" });
+  return { formatted, isOverdue };
+}
+
+async function loadBoard() {
+  const username = getTelegramUsername();
+  const cardsEl = document.getElementById("cards");
+  const tabsEl = document.getElementById("tabs");
+
+  if (!username) {
+    cardsEl.innerHTML = `<div id="error">Telegram foydalanuvchi nomi topilmadi. Botni Telegram ilovasi ichida oching.</div>`;
+    return;
+  }
+
+  cardsEl.innerHTML = `<div id="loading"><div class="spinner"></div><span>Yuklanmoqda...</span></div>`;
+
+  try {
+    const resp = await fetch(`${API_BASE}/api/board?username=${encodeURIComponent(username)}`);
+    const data = await resp.json();
+
+    if (!resp.ok) {
+      cardsEl.innerHTML = `<div id="error">${data.error || "Xatolik yuz berdi"}</div>`;
+      return;
+    }
+
+    boardData = data;
+    document.getElementById("header-title").textContent = `Salom, ${data.requester.name}`;
+    document.getElementById("header-subtitle").textContent = data.requester.isManager
+      ? "Barcha dizaynerlar vazifalari"
+      : "Sizning vazifalaringiz";
+
+    renderTabs();
+    renderCards();
+  } catch (err) {
+    cardsEl.innerHTML = `<div id="error">Ulanishda xatolik: ${err.message}</div>`;
+  }
+}
+
+function renderTabs() {
+  const tabsEl = document.getElementById("tabs");
+  tabsEl.innerHTML = "";
+
+  // Faqat vazifasi bor statuslarni ko'rsatamiz (bo'sh ustunlarni yashirish shart emas, lekin qulaylik uchun)
+  const statusesWithData = boardData.statusOrder.filter(
+    (s) => boardData.board[s] && boardData.board[s].length > 0
+  );
+  const statusesToShow = statusesWithData.length > 0 ? statusesWithData : boardData.statusOrder;
+
+  if (!currentStatus || !statusesToShow.includes(currentStatus)) {
+    currentStatus = statusesToShow[0];
+  }
+
+  for (const status of statusesToShow) {
+    const meta = STATUS_META[status] || { label: status, color: "var(--border)" };
+    const count = boardData.board[status]?.length || 0;
+    const tab = document.createElement("div");
+    tab.className = "tab" + (status === currentStatus ? " active" : "");
+    tab.style.color = meta.color;
+    tab.innerHTML = `<span class="dot" style="background:${meta.color}"></span>${meta.label}<span class="count">${count}</span>`;
+    tab.onclick = () => {
+      currentStatus = status;
+      renderTabs();
+      renderCards();
+    };
+    tabsEl.appendChild(tab);
+  }
+}
+
+function renderCards() {
+  const cardsEl = document.getElementById("cards");
+  const tasks = boardData.board[currentStatus] || [];
+
+  if (tasks.length === 0) {
+    cardsEl.innerHTML = `<div id="empty">Bu bosqichda vazifalar yo'q</div>`;
+    return;
+  }
+
+  cardsEl.innerHTML = "";
+  const meta = STATUS_META[currentStatus] || { color: "var(--border)" };
+
+  for (const task of tasks) {
+    const card = document.createElement("a");
+    card.className = "card";
+    card.href = task.url;
+    card.target = "_blank";
+    card.style.setProperty("--status-color", meta.color);
+
+    const deadline = formatDeadline(task.dedlayn);
+    const prioMeta = task.prioritet ? PRIO_META[task.prioritet] : null;
+
+    const metaParts = [];
+    if (task.projectName) {
+      metaParts.push(`<span class="item">📁 ${escapeHtml(task.projectName)}</span>`);
+    }
+    if (deadline) {
+      metaParts.push(
+        `<span class="item deadline ${deadline.isOverdue ? "overdue" : ""}">📅 ${deadline.formatted}${deadline.isOverdue ? " (o'tib ketgan)" : ""}</span>`
+      );
+    }
+    if (boardData.requester.isManager && task.designers.length > 0) {
+      metaParts.push(
+        `<span class="item">👤 ${task.designers.map((d) => escapeHtml(d.name)).join(", ")}</span>`
+      );
+    }
+
+    card.innerHTML = `
+      <div class="card-top">
+        <div class="card-title">${escapeHtml(task.name)}</div>
+        ${
+          task.prioritet
+            ? `<div class="prio" style="color:${prioMeta.color};background:${prioMeta.bg}">${escapeHtml(task.prioritet)}</div>`
+            : ""
+        }
+      </div>
+      <div class="card-meta">${metaParts.join("")}</div>
+    `;
+    cardsEl.appendChild(card);
+  }
+}
+
+function escapeHtml(str) {
+  const div = document.createElement("div");
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+loadBoard();
+</script>
+</body>
+</html>

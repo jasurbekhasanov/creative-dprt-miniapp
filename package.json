@@ -1,0 +1,19 @@
+{
+  "name": "creative-dprt-miniapp-backend",
+  "version": "1.0.0",
+  "description": "Creative Dprt Telegram Mini App backend - Notion Kanban board",
+  "main": "server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "@notionhq/client": "^2.2.15",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
