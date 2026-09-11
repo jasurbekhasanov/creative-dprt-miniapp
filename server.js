@@ -5,7 +5,13 @@ const express = require("express");
 const cors = require("cors");
 const path = require("path");
 const { Client } = require("@notionhq/client");
+const { CONTENT } = require("./content");
 require("dotenv").config();
+
+// Telegram bot token va mini app URL
+const BOT_TOKEN = process.env.BOT_TOKEN;
+const APP_URL = process.env.APP_URL || "https://creative-dprt-miniapp-production.up.railway.app";
+const TG_API = BOT_TOKEN ? `https://api.telegram.org/bot${BOT_TOKEN}` : null;
 
 const app = express();
 app.use(cors());
@@ -216,18 +222,94 @@ app.get("/api/board", async (req, res) => {
   }
 });
 
+// ---- Ma'lumot sahifalari endpoint'i (Agentlik, Ish jarayonlari, ...) ----
+app.get("/api/content/:page", (req, res) => {
+  const page = req.params.page;
+  const data = CONTENT[page];
+  if (!data) {
+    return res.status(404).json({ error: "Sahifa topilmadi" });
+  }
+  res.json(data);
+});
+
+// ---- Telegram bot webhook: /start ga javob ----
+app.post("/webhook", async (req, res) => {
+  res.sendStatus(200); // Telegram'ga darhol javob beramiz
+  try {
+    const update = req.body;
+    const msg = update.message;
+    if (!msg || !msg.text) return;
+
+    const chatId = msg.chat.id;
+    const text = msg.text.trim();
+
+    if (text === "/start" || text.startsWith("/start")) {
+      await sendWelcome(chatId);
+    }
+  } catch (e) {
+    console.error("Webhook xatosi:", e.message);
+  }
+});
+
+// Xush kelibsiz xabari + inline tugmalar
+async function sendWelcome(chatId) {
+  if (!TG_API) {
+    console.error("BOT_TOKEN yo'q, xabar yuborib bo'lmadi.");
+    return;
+  }
+
+  const welcomeText =
+    "<b>Creative Dprt</b>\n\n" +
+    "Assalomu alaykum! Bu yerdan vazifalaringizni ko'rishingiz va agentlik haqidagi ma'lumotlarni topishingiz mumkin.\n\n" +
+    "Quyidagi tugmalardan foydalaning 👇";
+
+  const keyboard = {
+    inline_keyboard: [
+      [{ text: "📋 Vazifalarni ko'rish", web_app: { url: `${APP_URL}/?page=tasks` } }],
+      [{ text: "🏢 Agentlik haqida", web_app: { url: `${APP_URL}/?page=about` } }],
+      [{ text: "⚙️ Ish jarayonlari", web_app: { url: `${APP_URL}/?page=workflow` } }],
+      [{ text: "👥 Kim nima qiladi", web_app: { url: `${APP_URL}/?page=roles` } }],
+      [{ text: "📚 Qo'llanmalar", web_app: { url: `${APP_URL}/?page=guides` } }],
+    ],
+  };
+
+  await fetch(`${TG_API}/sendMessage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      chat_id: chatId,
+      text: welcomeText,
+      parse_mode: "HTML",
+      reply_markup: keyboard,
+    }),
+  });
+}
+
 // "/" so'rovi statik middleware orqali frontend/index.html'ni avtomatik beradi
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`Server ${PORT}-portda ishga tushdi`);
-  // Diagnostika: shu papkada qanday fayllar bor?
-  const fs = require("fs");
-  try {
-    const files = fs.readdirSync(__dirname);
-    console.log("__dirname:", __dirname);
-    console.log("Papkadagi fayllar:", files.join(", "));
-  } catch (e) {
-    console.log("Papkani o'qishда xato:", e.message);
+
+  // Telegram webhook'ni avtomatik o'rnatamiz (bot /start'ga javob bera olishi uchun)
+  if (TG_API) {
+    try {
+      const webhookUrl = `${APP_URL}/webhook`;
+      const resp = await fetch(`${TG_API}/setWebhook`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: webhookUrl, allowed_updates: ["message"] }),
+      });
+      const result = await resp.json();
+      if (result.ok) {
+        console.log("Webhook o'rnatildi:", webhookUrl);
+      } else {
+        console.log("Webhook o'rnatishda muammo:", result.description);
+      }
+    } catch (e) {
+      console.log("Webhook o'rnatishda xato:", e.message);
+    }
+  } else {
+    console.log("BOT_TOKEN yo'q - bot funksiyasi o'chirilgan (faqat mini app ishlaydi).");
   }
 });
