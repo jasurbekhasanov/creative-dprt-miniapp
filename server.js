@@ -215,6 +215,7 @@ app.get("/api/board", async (req, res) => {
       },
       statusOrder: STATUS_ORDER,
       board,
+      tasks: formattedTasks, // Home sahifasi uchun tekis ro'yxat
     });
   } catch (err) {
     console.error(err);
@@ -265,11 +266,7 @@ async function sendWelcome(chatId) {
 
   const keyboard = {
     inline_keyboard: [
-      [{ text: "📋 Vazifalarni ko'rish", web_app: { url: `${APP_URL}/?page=tasks` } }],
-      [{ text: "🏢 Agentlik haqida", web_app: { url: `${APP_URL}/?page=about` } }],
-      [{ text: "⚙️ Ish jarayonlari", web_app: { url: `${APP_URL}/?page=workflow` } }],
-      [{ text: "👥 Kim nima qiladi", web_app: { url: `${APP_URL}/?page=roles` } }],
-      [{ text: "📚 Qo'llanmalar", web_app: { url: `${APP_URL}/?page=guides` } }],
+      [{ text: "📋 Ilovani ochish", web_app: { url: `${APP_URL}/` } }],
     ],
   };
 
