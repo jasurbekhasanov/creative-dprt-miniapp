@@ -198,6 +198,54 @@
   @keyframes spin {
     to { transform: rotate(360deg); }
   }
+
+  /* ---- Ma'lumot sahifalari (Agentlik, Ish jarayonlari, ...) ---- */
+  #content-page {
+    padding: 4px 18px 40px;
+    line-height: 1.6;
+  }
+  #content-page .c-heading {
+    font-size: 18px;
+    font-weight: 700;
+    margin: 26px 0 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+    letter-spacing: -0.01em;
+  }
+  #content-page .c-heading:first-child { margin-top: 6px; }
+  #content-page .c-subheading {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--accent);
+    margin: 18px 0 6px;
+  }
+  #content-page .c-text {
+    font-size: 14.5px;
+    color: var(--text);
+    margin: 0 0 10px;
+  }
+  #content-page ul.c-list,
+  #content-page ol.c-numbered {
+    margin: 0 0 12px;
+    padding-left: 20px;
+  }
+  #content-page ul.c-list li,
+  #content-page ol.c-numbered li {
+    font-size: 14px;
+    color: var(--text);
+    margin-bottom: 8px;
+    padding-left: 3px;
+  }
+  #content-page ul.c-list li::marker { color: var(--accent); }
+  #content-page .c-note {
+    font-size: 13.5px;
+    color: var(--text-dim);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin: 12px 0 4px;
+  }
 </style>
 </head>
 <body>
@@ -377,7 +425,74 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
-loadBoard();
+// ---- Sahifa boshqaruvi: ?page= parametriga qarab qaysi sahifa ochilishini aniqlaydi ----
+function getPage() {
+  const params = new URLSearchParams(window.location.search);
+  return params.get("page") || "tasks";
+}
+
+async function loadContentPage(pageKey) {
+  const headerTitle = document.getElementById("header-title");
+  const headerSubtitle = document.getElementById("header-subtitle");
+  const tabsEl = document.getElementById("tabs");
+  const cardsEl = document.getElementById("cards");
+
+  // Kanban elementlarini yashiramiz
+  tabsEl.style.display = "none";
+  cardsEl.style.display = "none";
+
+  // Content konteyner
+  let contentEl = document.getElementById("content-page");
+  if (!contentEl) {
+    contentEl = document.createElement("div");
+    contentEl.id = "content-page";
+    document.getElementById("app").appendChild(contentEl);
+  }
+  contentEl.innerHTML = `<div id="loading"><div class="spinner"></div><span>Yuklanmoqda...</span></div>`;
+
+  try {
+    const resp = await fetch(`/api/content/${pageKey}`);
+    const data = await resp.json();
+    if (!resp.ok) {
+      contentEl.innerHTML = `<div id="error">${data.error || "Sahifa topilmadi"}</div>`;
+      return;
+    }
+
+    headerTitle.textContent = data.title;
+    headerSubtitle.textContent = "Creative Dprt";
+
+    contentEl.innerHTML = data.sections.map(renderSection).join("");
+  } catch (err) {
+    contentEl.innerHTML = `<div id="error">Ulanishda xatolik: ${err.message}</div>`;
+  }
+}
+
+function renderSection(s) {
+  switch (s.type) {
+    case "heading":
+      return `<div class="c-heading">${escapeHtml(s.text)}</div>`;
+    case "subheading":
+      return `<div class="c-subheading">${escapeHtml(s.text)}</div>`;
+    case "text":
+      return `<p class="c-text">${escapeHtml(s.text)}</p>`;
+    case "note":
+      return `<div class="c-note">${escapeHtml(s.text)}</div>`;
+    case "list":
+      return `<ul class="c-list">${s.items.map((i) => `<li>${escapeHtml(i)}</li>`).join("")}</ul>`;
+    case "numbered":
+      return `<ol class="c-numbered">${s.items.map((i) => `<li>${escapeHtml(i)}</li>`).join("")}</ol>`;
+    default:
+      return "";
+  }
+}
+
+// ---- Router: qaysi sahifani ochish ----
+const page = getPage();
+if (page === "tasks") {
+  loadBoard();
+} else {
+  loadContentPage(page);
+}
 </script>
 </body>
 </html>
