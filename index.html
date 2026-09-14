@@ -2,510 +2,1549 @@
 <html lang="uz">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover, user-scalable=no" />
+<meta name="theme-color" content="#f5f5f3" />
 <title>Creative Dprt</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
   :root {
-    --bg: #0f0f11;
-    --surface: #18181b;
-    --surface-2: #212125;
-    --border: #2a2a2f;
-    --text: #f2f2f0;
-    --text-dim: #9a9a9f;
-    --accent: #c8f04d;
-    --accent-text: #1a1a10;
+    --bg: #ffffff;
+    --surface: #ffffff;
+    --surface-2: #f5f5f7;
+    --surface-3: #e8e8ed;
 
-    --col-draft: #6b6b70;
-    --col-goya: #a875e8;
-    --col-tasdiq: #e0b93c;
-    --col-dizayn: #4d8fe0;
-    --col-artdir: #b5773f;
-    --col-mijoz: #e0629b;
-    --col-finish: #4caf6e;
-    --col-archive: #4a4a4f;
+    --line: #e5e5ea;
+    --line-2: #d1d1d6;
 
-    --prio-urgent: #e05c4d;
-    --prio-high: #e0b93c;
-    --prio-normal: #4d8fe0;
+    --text: #1d1d1f;
+    --text-2: #515154;
+    --text-3: #86868b;
 
-    --overdue: #e05c4d;
-    --nav-h: 68px;
+    --accent: #F6E921;
+    --accent-ink: #000000;
+    --accent-soft: rgba(246,233,33,.28);
+    --ios-blue: #007aff;
+    --ios-blue-soft: #eaf2ff;
+    --ios-red: #d70015;
+    --ios-red-soft: #fff0f0;
+    --ios-orange: #c93400;
+    --ios-orange-soft: #fff1e7;
+    --soft-yellow: #FFF888;
+    --soft-green: #90FF88;
+    --soft-blue: #88C6FF;
+    --soft-purple: #BE88FF;
+    --soft-red: #FF888A;
+
+    --col-draft:   #000000;
+    --col-goya:    #000000;
+    --col-tasdiq:  #000000;
+    --col-dizayn:  #000000;
+    --col-artdir:  #000000;
+    --col-mijoz:   #000000;
+    --col-finish:  #000000;
+    --col-archive: #000000;
+
+    --prio-urgent: #000000;
+    --prio-high:   #000000;
+    --prio-normal: #000000;
+    --danger: #000000;
+
+    --f-xs: 10.5px;
+    --f-sm: 12px;
+    --f-md: 13px;
+    --f-lg: 14.5px;
+
+    --r-sm: 10px;
+    --r-md: 16px;
+    --r-lg: 24px;
+
+    --gut: 16px;
+    --nav-h: 56px;
+    --nav-gap: 10px;
+    --safe-b: env(safe-area-inset-bottom, 0px);
+    --safe-t: env(safe-area-inset-top, 0px);
+    --ease: cubic-bezier(0.22, 0.8, 0.3, 1);
   }
 
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-
+  html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; overscroll-behavior: none; }
   body {
-    margin: 0;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    -webkit-font-smoothing: antialiased;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+    background: var(--bg); color: var(--text);
+    -webkit-font-smoothing: antialiased; font-size: var(--f-lg);
   }
+  button { font: inherit; color: inherit; background: none; border: none; padding: 0; cursor: pointer; }
+  a { color: var(--accent); }
 
   #app {
-    min-height: 100vh;
-    padding-bottom: var(--nav-h);
+    height: var(--vh, 100vh);
+    overflow-y: auto; overflow-x: hidden;
+    -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain;
+    padding-bottom: calc(var(--nav-h) + var(--nav-gap) + var(--safe-b) + 22px);
   }
 
-  /* ---------- Umumiy header ---------- */
-  .page-header {
-    padding: 18px 18px 10px;
-  }
-  .page-header h1 {
-    font-size: 20px;
-    font-weight: 700;
-    margin: 0 0 2px;
-    letter-spacing: -0.02em;
-  }
-  .page-header .subtitle {
-    font-size: 13.5px;
-    color: var(--text-dim);
-    margin: 0;
-  }
-
-  /* ---------- Loading / error / empty ---------- */
-  .state-msg {
+  #ptr {
+    position: absolute; top: 0; left: 0; right: 0;
     display: flex; align-items: center; justify-content: center;
-    flex-direction: column; gap: 10px;
-    padding: 48px 24px; text-align: center;
-    color: var(--text-dim); font-size: 14px;
+    height: 0; overflow: hidden; color: var(--text-3); z-index: 5; pointer-events: none;
   }
-  .state-msg.error { color: var(--overdue); }
-  .spinner {
-    width: 24px; height: 24px; border-radius: 50%;
-    border: 2.5px solid var(--border); border-top-color: var(--accent);
-    animation: spin 0.8s linear infinite;
-  }
+  #ptr .ring { width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--line-2); border-top-color: var(--accent); }
+  #ptr.spin .ring { animation: spin 0.7s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
 
-  /* ---------- Gorizontal kalendar (Home) ---------- */
-  .cal-strip {
-    display: flex; gap: 8px; overflow-x: auto;
-    padding: 8px 18px 14px; scrollbar-width: none;
-    scroll-snap-type: x proximity;
+  /* ---------- Header ---------- */
+  .topbar {
+    position: sticky; top: 0; z-index: 20;
+    background: color-mix(in srgb, var(--bg) 92%, transparent);
+    backdrop-filter: saturate(140%) blur(16px); -webkit-backdrop-filter: saturate(140%) blur(16px);
+    padding: 16px var(--gut) 12px;
+    display: flex; align-items: center; gap: 11px;
+    border-bottom: 1px solid transparent; transition: border-color 0.2s;
   }
-  .cal-strip::-webkit-scrollbar { display: none; }
-  .cal-day {
-    flex: 0 0 auto; width: 52px; height: 68px;
-    border-radius: 14px; background: var(--surface);
-    border: 1px solid var(--border);
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    gap: 3px; scroll-snap-align: center; cursor: pointer;
-    transition: background 0.15s;
+  .topbar.stuck { border-bottom-color: var(--line); }
+  .brand-logo { width: 132px; height: auto; filter: invert(1); display: block; margin-right: auto; }
+  .topbar .tt { display: none; }
+  .topbar h1 {
+    font-size: 15px; font-weight: 720; margin: 0; letter-spacing: -0.025em; line-height: 1.2;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
-  .cal-day .dow { font-size: 11px; color: var(--text-dim); text-transform: uppercase; }
-  .cal-day .dnum { font-size: 17px; font-weight: 600; }
-  .cal-day .cal-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); }
-  .cal-day .cal-dot.hidden { visibility: hidden; }
-  .cal-day.active {
-    background: var(--accent); border-color: var(--accent);
+  .topbar .subtitle {
+    font-size: var(--f-md); color: var(--text-3); margin: 2px 0 0; line-height: 1.32;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
   }
-  .cal-day.active .dow,
-  .cal-day.active .dnum { color: var(--accent-text); }
-  .cal-day.active .cal-dot { background: var(--accent-text); }
-  .cal-day.today:not(.active) .dnum { color: var(--accent); }
+  .topbar .subtitle b { color: var(--text-2); font-weight: 680; }
+  .topbar .subtitle .hot { color: var(--danger); font-weight: 680; }
 
-  /* ---------- Bo'lim sarlavhasi (Home ish ro'yxatlari) ---------- */
-  .section-label {
-    display: flex; align-items: center; gap: 8px;
-    font-size: 13px; font-weight: 600; color: var(--text-dim);
-    text-transform: uppercase; letter-spacing: 0.03em;
-    padding: 16px 18px 8px;
+  .icon-btn {
+    flex: 0 0 auto; width: 34px; height: 34px; border-radius: 50%;
+    display: grid; place-items: center;
+    background: var(--surface); border: 1px solid var(--line); color: var(--text-2);
+    transition: transform 0.15s var(--ease), background 0.15s, color 0.15s;
   }
-  .section-label .badge {
-    font-size: 11px; font-weight: 700; padding: 1px 8px;
-    border-radius: 10px; background: var(--surface-2); color: var(--text);
+  .icon-btn:active { transform: scale(0.92); background: var(--surface-2); }
+  .icon-btn.on { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 35%, transparent); background: var(--accent-soft); }
+  .icon-btn.busy svg { animation: spin 0.8s linear infinite; }
+
+  .ico { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+  .ico-sm { width: 13px; height: 13px; stroke-width: 2; flex: 0 0 auto; }
+
+  .view-in { animation: viewIn 0.22s var(--ease) both; }
+  @keyframes viewIn { from { opacity: 0; transform: translateY(6px); } }
+
+  /* ---------- Holat ---------- */
+  .empty {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 8px; padding: 38px 32px; text-align: center;
   }
-  .section-label.overdue-label { color: var(--overdue); }
-  .section-label.overdue-label .badge { background: rgba(224,92,77,0.18); color: var(--overdue); }
+  .empty .glyph {
+    width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; margin-bottom: 4px;
+    background: var(--surface); border: 1px solid var(--line); color: var(--text-3);
+  }
+  .empty .glyph .ico { width: 21px; height: 21px; }
+  .empty h3 { margin: 0; font-size: var(--f-lg); font-weight: 600; color: var(--text-2); }
+  .empty p { margin: 0; font-size: var(--f-md); color: var(--text-3); line-height: 1.5; max-width: 270px; }
+  .empty.ok .glyph { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 30%, transparent); background: var(--accent-soft); }
+  .empty.error .glyph { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 35%, transparent); }
+  .empty.error h3 { color: var(--danger); }
+
+  /* ---------- Skeleton ---------- */
+  .sk { background: var(--surface); border-radius: var(--r-sm); position: relative; overflow: hidden; }
+  .sk::after {
+    content: ""; position: absolute; inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.045), transparent);
+    animation: shim 1.3s infinite;
+  }
+  @keyframes shim { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
+  .sk-card { height: 104px; border-radius: var(--r-md); }
+
+  /* ---------- Home: aniqlik va tez tanlash ---------- */
+  .home-intro { padding: 18px var(--gut) 6px; }
+  .home-intro h2 { margin: 0; font-family: Georgia, serif; font-size: 40px; font-weight: 400; letter-spacing: -.05em; line-height: 1; }
+  .home-intro p { margin: 9px 0 0; color: var(--text-3); font-size: 15px; line-height: 1.35; }
+  .focus-strip {
+    display: flex; gap: 12px; overflow-x: auto; padding: 14px var(--gut) 2px;
+    scrollbar-width: none; scroll-snap-type: x proximity;
+  }
+  .focus-strip::-webkit-scrollbar { display: none; }
+  .focus-card {
+    --fc: #f6e921;
+    --fc-ink: #111111;
+    position: relative; z-index: 0; flex: 0 0 min(78vw, 292px); min-height: 190px; text-align: left;
+    border-radius: 0 19px 19px 19px; padding: 15px; scroll-snap-align: start;
+    background: var(--fc); color: var(--fc-ink); border: 1px solid color-mix(in srgb, var(--fc-ink) 8%, transparent);
+    display: flex; flex-direction: column; transition: transform .12s var(--ease);
+  }
+  .focus-card::before {
+    content: ""; position: absolute; z-index: 0; left: -1px; top: -12px; width: 106px; height: 16px;
+    background: var(--fc); border-radius: 14px 14px 0 0; border: 1px solid color-mix(in srgb, var(--fc-ink) 8%, transparent); border-bottom: 0;
+  }
+  .focus-card > * { position: relative; z-index: 1; }
+  .focus-card:active { transform: scale(.975); }
+  .focus-top { display: flex; align-items: center; justify-content: flex-start; gap: 8px; }
+  .focus-state {
+    display: inline-flex; align-items: center; gap: 5px; padding: 4px 8px;
+    border-radius: 20px; background: rgba(255,255,255,.84); color: var(--fc-ink);
+    font-size: var(--f-xs); font-weight: 720;
+  }
+  .focus-state i { width: 5px; height: 5px; border-radius: 50%; background: var(--sc, #000); }
+  .focus-due { color: var(--fc-ink); font-size: var(--f-sm); font-weight: 740; }
+  .focus-folder { display: flex; align-items: center; gap: 5px; margin-top: 11px; color: color-mix(in srgb, var(--fc-ink) 68%, transparent); font-size: var(--f-sm); font-weight: 670; }
+  .focus-title { margin-top: 17px; font-size: 21px; font-weight: 740; letter-spacing: -0.045em; line-height: 1.1; }
+  .focus-owner { display: flex; align-items: center; gap: 6px; margin-top: 6px; color: color-mix(in srgb, var(--fc-ink) 68%, transparent); font-size: var(--f-sm); font-weight: 620; }
+  .focus-bottom { display: flex; align-items: center; justify-content: space-between; margin-top: auto; padding-top: 13px; color: color-mix(in srgb, var(--fc-ink) 74%, transparent); font-size: var(--f-sm); }
+  .focus-bottom .person { color: color-mix(in srgb, var(--fc-ink) 72%, transparent); }
+  .tasks-title { padding: 30px var(--gut) 10px; font-family: Georgia, serif; font-size: 29px; font-weight: 400; letter-spacing: -.05em; }
+  .time-tabs { display: flex; gap: 0; padding: 0 var(--gut); overflow-x: auto; scrollbar-width: none; }
+  .time-tabs::-webkit-scrollbar { display: none; }
+  .time-tab { flex: 0 0 auto; padding: 8px 14px; border-radius: 20px; color: var(--text-3); background: var(--surface-2); border: 0; font-size: var(--f-md); font-weight: 650; margin-right: 2px; }
+  .time-tab.on { color: #fff; background: #000; }
+
+  /* ---------- Kalendar paneli ---------- */
+  .cal-panel { overflow: hidden; }
+  .cal-head { display: flex; align-items: center; gap: 8px; padding: 8px var(--gut) 0; }
+  .cal-head .month { flex: 1; font-size: var(--f-sm); font-weight: 640; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.07em; }
+  .mini-btn {
+    width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center;
+    color: var(--text-2); background: var(--surface); border: 1px solid var(--line);
+    transition: transform 0.12s var(--ease);
+  }
+  .mini-btn:active { transform: scale(0.9); }
+  .mgrid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; padding: 8px var(--gut) 6px; }
+  .mdow { font-size: var(--f-xs); color: var(--text-3); text-align: center; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; padding-bottom: 2px; }
+  .mday {
+    aspect-ratio: 1 / 1; border-radius: 11px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+    font-size: 13.5px; font-weight: 580; color: var(--text);
+    transition: background 0.15s, transform 0.12s var(--ease);
+  }
+  .mday:active { transform: scale(0.9); }
+  .mday .mdot { width: 4px; height: 4px; border-radius: 50%; background: transparent; }
+  .mday.out { color: var(--text-3); opacity: 0.35; }
+  .mday.has { background: var(--surface-2); }
+  .mday.has .mdot { background: var(--accent); }
+  .mday.late { background: color-mix(in srgb, var(--danger) 16%, transparent); color: var(--danger); }
+  .mday.late .mdot { background: var(--danger); }
+  .mday.today { box-shadow: inset 0 0 0 1px var(--line-2); }
+  .mday.today:not(.sel) { color: var(--accent); }
+  .mday.sel { background: var(--accent) !important; color: var(--accent-ink) !important; box-shadow: none; }
+  .mday.sel .mdot { background: var(--accent-ink) !important; opacity: 0.55; }
+
+  .filter-bar { display: flex; align-items: center; gap: 8px; padding: 6px var(--gut) 0; }
+  .fchip {
+    display: inline-flex; align-items: center; gap: 7px;
+    background: var(--accent-soft); border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+    color: var(--accent); border-radius: 20px; padding: 6px 9px 6px 12px;
+    font-size: var(--f-md); font-weight: 620;
+  }
+  .fchip .x { width: 16px; height: 16px; border-radius: 50%; display: grid; place-items: center; background: color-mix(in srgb, var(--accent) 22%, transparent); }
+  .fchip .x svg { width: 9px; height: 9px; stroke-width: 2.6; }
+
+  /* ---------- Bo'lim sarlavhasi ---------- */
+  .sec {
+    display: flex; align-items: center; gap: 7px;
+    font-size: var(--f-sm); font-weight: 760; color: var(--text-2);
+    text-transform: uppercase; letter-spacing: 0.07em;
+    padding: 24px var(--gut) 10px;
+  }
+  .sec .badge { font-size: var(--f-xs); font-weight: 700; padding: 1.5px 7px; border-radius: 20px; background: var(--surface-2); color: var(--text-2); letter-spacing: 0; }
+  .sec .hint { margin-left: auto; font-size: var(--f-xs); font-weight: 600; color: var(--text-3); text-transform: none; letter-spacing: 0; opacity: 0.8; }
 
   /* ---------- Vazifa kartochkasi ---------- */
-  .cards-wrap { padding: 0 18px; display: flex; flex-direction: column; gap: 10px; }
+  .cards { padding: 0 var(--gut); display: flex; flex-direction: column; gap: 8px; }
+  .cards.muted .card { opacity: 0.62; }
   .card {
-    background: var(--surface); border: 1px solid var(--border);
-    border-left: 3px solid var(--status-color, var(--border));
-    border-radius: 12px; padding: 13px 15px;
-    text-decoration: none; color: inherit; display: block;
+    display: block; width: 100%; text-align: left;
+    background: var(--surface); border: 1px solid rgba(20,20,18,.06);
+    border-radius: 15px; padding: 14px;
+    transition: transform 0.12s var(--ease), filter 0.15s, opacity 0.2s;
   }
-  .card-top {
-    display: flex; justify-content: space-between; align-items: flex-start;
-    gap: 8px; margin-bottom: 7px;
-  }
-  .card-title { font-size: 14.5px; font-weight: 600; line-height: 1.35; }
-  .prio {
-    flex: 0 0 auto; font-size: 10.5px; font-weight: 700;
-    padding: 2px 7px; border-radius: 6px; white-space: nowrap;
-  }
-  .card-meta { display: flex; flex-wrap: wrap; gap: 8px 12px; font-size: 12.5px; color: var(--text-dim); }
-  .card-meta .item { display: flex; align-items: center; gap: 4px; }
-  .card-meta .status-pill {
-    font-size: 11px; font-weight: 600; padding: 1px 8px; border-radius: 8px;
-    color: var(--status-color); background: color-mix(in srgb, var(--status-color) 15%, transparent);
-  }
-  .card-meta .deadline.overdue { color: var(--overdue); font-weight: 600; }
+  .card:active { transform: scale(0.985); filter: brightness(1.2); }
+  /* Rang faqat prioritet baland bo'lganda - qolgani neytral */
+  .card[data-prio="urgent"] { background: #fde9e7; border-color: #f4c8c3; }
+  .card[data-prio="high"] { background: #fff7d8; border-color: #f0e2a7; }
+  .card-top { display: flex; align-items: flex-start; gap: 9px; }
+  .card-title { flex: 1; font-size: 16px; font-weight: 710; line-height: 1.25; letter-spacing: -0.027em; }
+  .flag { width: 15px; height: 15px; flex: 0 0 auto; margin-top: 2px; stroke: currentColor; stroke-width: 1.9; stroke-linejoin: round; fill: none; }
+  .flag.p-urgent { color: var(--prio-urgent); fill: color-mix(in srgb, var(--prio-urgent) 30%, transparent); }
+  .flag.p-high   { color: var(--prio-high);   fill: color-mix(in srgb, var(--prio-high) 30%, transparent); }
+  .flag.p-normal { color: var(--prio-normal); }
+  .flag.p-none   { color: var(--text-3); opacity: 0.45; }
 
-  /* ---------- Vazifalar (Kanban tab) ---------- */
-  #tabs { display: flex; overflow-x: auto; gap: 6px; padding: 10px 18px 12px; scrollbar-width: none; }
-  #tabs::-webkit-scrollbar { display: none; }
-  .tab {
-    flex: 0 0 auto; padding: 7px 13px; border-radius: 20px;
-    font-size: 13px; font-weight: 500; white-space: nowrap;
-    background: var(--surface); border: 1px solid var(--border);
-    color: var(--text-dim); display: flex; align-items: center; gap: 6px; cursor: pointer;
+  .card-proj {
+    font-size: var(--f-md); color: var(--text-3); font-weight: 610; margin-top: 5px;
+    display: flex; align-items: center; gap: 5px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
-  .tab.active { background: var(--surface-2); color: var(--text); border-color: currentColor; }
-  .tab .dot { width: 7px; height: 7px; border-radius: 50%; flex: 0 0 auto; }
-  .tab .count { font-size: 11px; color: var(--text-dim); background: var(--bg); padding: 1px 6px; border-radius: 10px; }
+  .card-row { display: flex; align-items: center; flex-wrap: wrap; gap: 7px 10px; margin-top: 8px; font-size: var(--f-md); color: var(--text-3); }
+  .card-row .m { display: inline-flex; align-items: center; gap: 4.5px; }
+  .m.late { color: var(--danger); font-weight: 640; }
+  .m.p-high { color: #957300; font-weight: 660; }
+  .m.p-urgent { color: #b74c42; font-weight: 660; }
+  .st-chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: var(--f-sm); font-weight: 620; padding: 3px 9px 3px 7px;
+    border-radius: 20px; color: var(--si, var(--sc)); background: var(--sb, color-mix(in srgb, var(--sc) 13%, white));
+  }
+  .st-chip i { width: 5px; height: 5px; border-radius: 50%; background: currentColor; flex: 0 0 auto; }
 
-  /* ---------- Ma'lumot sahifalari (Agentlik / Qo'llanmalar) ---------- */
-  .content-body { padding: 4px 18px 20px; line-height: 1.6; }
-  .content-body .c-heading {
-    font-size: 17px; font-weight: 700; margin: 22px 0 10px;
-    padding-bottom: 8px; border-bottom: 1px solid var(--border); letter-spacing: -0.01em;
-  }
-  .content-body .c-heading:first-child { margin-top: 6px; }
-  .content-body .c-subheading { font-size: 14px; font-weight: 600; color: var(--accent); margin: 16px 0 6px; }
-  .content-body .c-text { font-size: 14.5px; margin: 0 0 10px; }
-  .content-body ul.c-list, .content-body ol.c-numbered { margin: 0 0 12px; padding-left: 20px; }
-  .content-body li { font-size: 14px; margin-bottom: 8px; padding-left: 3px; }
-  .content-body ul.c-list li::marker { color: var(--accent); }
-  .content-body .c-note {
-    font-size: 13.5px; color: var(--text-dim); background: var(--surface);
-    border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; margin: 12px 0 4px;
-  }
+  /* Dizaynerlar - ism bo'yicha, rangli nuqta bilan */
+  .people { display: inline-flex; flex-wrap: wrap; gap: 4px 10px; margin-left: auto; }
+  .person { display: inline-flex; align-items: center; gap: 6px; font-size: var(--f-md); color: var(--text-2); font-weight: 560; }
+  .person i { width: 6px; height: 6px; border-radius: 50%; flex: 0 0 auto; }
+  .person.more { color: var(--text-3); }
 
-  /* Agentlik ichki tab'lari */
-  #subtabs { display: flex; overflow-x: auto; gap: 6px; padding: 6px 18px 12px; scrollbar-width: none; }
-  #subtabs::-webkit-scrollbar { display: none; }
-  .subtab {
-    flex: 0 0 auto; padding: 6px 12px; border-radius: 18px; font-size: 12.5px; font-weight: 500;
-    white-space: nowrap; background: var(--surface); border: 1px solid var(--border);
-    color: var(--text-dim); cursor: pointer;
-  }
-  .subtab.active { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+  /* ---------- Dizayner: bitta ekran, bitta vazifa ---------- */
+  body.designer-mode #app { padding-bottom: calc(28px + var(--safe-b)); }
+  body.designer-mode .fab { display: none !important; }
+  body.designer-mode .bnav { display:none !important; }
+  body.designer-mode .nav-item { flex:1; flex-direction:column; gap:3px; color:var(--text-3); }
+  body.designer-mode .nav-item .ico { width:20px; height:20px; }
+  body.designer-mode .nav-item .lbl { max-width:90px; opacity:1; font-size:10px; font-weight:560; }
+  body.designer-mode .nav-item.active { flex:1; color:var(--text); background:transparent; }
+  .my-tasks { padding: 25px var(--gut) 12px; }
+  .my-tasks h2 { margin: 0; font-size: 34px; line-height: 1.08; letter-spacing: -.045em; font-weight: 650; }
+  .task-group { margin-top: 28px; }
+  .task-group-head { display:flex; align-items:center; gap:9px; padding:0 0 12px; font-size:20px; line-height:1.1; letter-spacing:-.032em; font-weight:650; }
+  .task-group-head .ico { width:21px; height:21px; color:var(--text-2); stroke-width:1.8; }
+  .task-group-head .count { font-size:14px; letter-spacing:0; color:var(--text-2); background:var(--surface-2); padding:4px 8px; border-radius:9px; font-weight:560; }
+  .task-group.overdue .task-group-head { color:var(--ios-red); }
+  .task-group.overdue .task-group-head .ico { color:var(--ios-red); }
+  .task-group.overdue .task-group-head .count { color:var(--ios-red); background:var(--ios-red-soft); }
+  .task-group.today .task-group-head .ico { color:#2475ad; }
+  .task-group.today .task-group-head .count { color:#2475ad; background:color-mix(in srgb, var(--soft-blue) 45%, white); }
+  .task-group.upcoming .task-group-head .ico { color:#287a2c; }
+  .task-group.upcoming .task-group-head .count { color:#287a2c; background:color-mix(in srgb, var(--soft-green) 48%, white); }
+  .task-group.rush .task-group-head { color:var(--text); }
+  .task-group.rush .task-group-head .ico { color:#9b8b00; }
+  .task-group.rush .task-group-head .count { color:var(--text); background:color-mix(in srgb, var(--soft-yellow) 55%, white); }
+  .quick-strip { display:flex; gap:10px; overflow-x:auto; margin:0 calc(var(--gut) * -1); padding:12px var(--gut) 2px; scrollbar-width:none; }
+  .quick-strip::-webkit-scrollbar { display:none; }
+  .quick-task { --folder-bg:var(--soft-yellow); --folder-ink:#151512; position:relative; z-index:0; flex:0 0 174px; min-height:156px; padding:14px; text-align:left; border-radius:0 16px 16px 16px; background:var(--folder-bg); color:var(--folder-ink); border:1px solid color-mix(in srgb, var(--folder-ink) 15%, transparent); display:flex; flex-direction:column; overflow:visible; }
+  .quick-task::before { content:""; position:absolute; z-index:1; top:-11px; left:-1px; width:96px; height:14px; border-radius:14px 14px 0 0; background:var(--folder-bg); border:1px solid color-mix(in srgb, var(--folder-ink) 15%, transparent); border-bottom:0; }
+  .quick-task > * { position:relative; z-index:2; }
+  .quick-status { display:inline-flex; align-items:center; gap:4px; align-self:flex-start; padding:4px 8px; border-radius:99px; background:color-mix(in srgb, white 82%, transparent); font-size:11px; font-weight:630; }
+  .quick-status i { width:5px; height:5px; border-radius:50%; background:currentColor; }
+  .quick-status .ico { width:13px; height:13px; }
+  .quick-name { margin-top:15px; color:var(--folder-ink); font-size:16px; line-height:1.18; font-weight:650; letter-spacing:-.03em; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+  .quick-project { display:flex; align-items:center; gap:4px; margin-top:9px; color:color-mix(in srgb, var(--folder-ink) 76%, transparent); font-size:12px; font-weight:560; }
+  .quick-project .ico { width:14px; height:14px; }
+  .quick-meta { margin-top:auto; padding-top:10px; color:color-mix(in srgb, var(--folder-ink) 80%, transparent); font-size:12px; font-weight:620; }
+  .designer-list { display:flex; flex-direction:column; gap:9px; }
+  .designer-task { display:flex; align-items:flex-start; gap:13px; padding:15px; border:1px solid var(--line); border-radius:13px; background:var(--surface); }
+  .task-group.today .designer-task { background:var(--soft-blue); border-color:color-mix(in srgb, var(--soft-blue) 68%, #347aa6); }
+  .task-group.upcoming .designer-task { background:var(--soft-green); border-color:color-mix(in srgb, var(--soft-green) 68%, #3d7b3d); }
+  .task-group.today .designer-chip, .task-group.upcoming .designer-chip { background:color-mix(in srgb, white 64%, transparent); color:var(--text-2); }
+  .task-group.today .task-check, .task-group.upcoming .task-check { border-color:color-mix(in srgb, #000 35%, transparent); }
+  .task-check { width:27px; height:27px; border-radius:50%; border:1.5px solid var(--line-2); flex:0 0 auto; margin-top:1px; transition:background .15s, border-color .15s, transform .12s var(--ease); }
+  .task-check:active { transform:scale(.87); }
+  .task-check.done { background:#000; border-color:#000; color:#fff; display:grid; place-items:center; }
+  .task-check .ico { display:none; width:15px; height:15px; stroke-width:2.5; }
+  .task-check.done .ico { display:block; }
+  .designer-task-main { min-width:0; flex:1; text-align:left; }
+  .designer-task-name { font-size:17px; font-weight:560; letter-spacing:-.028em; line-height:1.28; }
+  .designer-task-meta { display:flex; align-items:center; flex-wrap:wrap; gap:6px; margin-top:8px; }
+  .designer-chip { display:inline-flex; align-items:center; gap:4px; padding:5px 8px; border-radius:9px; background:#f2f2f7; color:#636366; font-size:13px; line-height:1; font-weight:500; }
+  .designer-chip .ico { width:15px; height:15px; stroke-width:2; }
+  .designer-chip.late { background:var(--ios-red-soft); color:var(--ios-red); }
+  .designer-chip.p-high { background:#fff7db; color:#9a6700; }
+  .designer-chip.p-urgent { background:var(--ios-orange-soft); color:var(--ios-orange); }
+  .designer-empty { padding:24px 0 8px; color:var(--text-3); font-size:15px; line-height:1.45; }
+  .group-toggle { display:grid; place-items:center; width:30px; height:30px; margin-left:auto; border-radius:50%; color:var(--text-2); background:color-mix(in srgb, white 44%, transparent); transition:transform .16s var(--ease); }
+  .group-toggle .ico { width:17px; height:17px; }
+  .task-group.collapsed .group-toggle { transform:rotate(-90deg); }
+  .task-group.collapsed .designer-list { display:none; }
 
-  /* ---------- Pastki navigatsiya ---------- */
-  .bottom-nav {
-    position: fixed; bottom: 0; left: 0; right: 0; height: var(--nav-h);
-    background: rgba(20,20,23,0.92); backdrop-filter: blur(14px);
-    border-top: 1px solid var(--border);
-    display: flex; align-items: center; justify-content: space-around;
-    padding-bottom: env(safe-area-inset-bottom, 0);
-    z-index: 50;
+  /* ---------- Dizayner: Figma konseptiga mos kompakt ish stoli ---------- */
+  body.designer-mode .topbar { min-height:44px; padding:11px var(--gut); background:#111; border:0; backdrop-filter:none; }
+  body.designer-mode .brand-logo { width:92px; filter:none; }
+  body.designer-mode #refresh-btn { display:none; }
+  body.manager-mode .topbar { min-height:44px; padding:11px var(--gut); background:#111; border:0; backdrop-filter:none; }
+  body.manager-mode .brand-logo { width:92px; filter:none; }
+  body.manager-mode #refresh-btn, body.manager-mode #cal-toggle { display:none; }
+  body.designer-mode .bnav { display:none !important; }
+  body.designer-mode .nav-item { display:none; }
+  body.designer-mode .nav-item[data-nav="home"] { display:flex; flex:0 0 auto; flex-direction:row; gap:4px; padding:0 10px; border-radius:99px; color:#111; background:var(--soft-yellow); }
+  body.designer-mode .nav-item[data-nav="home"] .ico { width:14px; height:14px; }
+  body.designer-mode .nav-item[data-nav="home"] .lbl { font-size:10px; font-weight:700; }
+  .my-tasks { padding:28px var(--gut) 28px; }
+  .my-tasks h2 { font-size:38px; font-weight:700; line-height:1.02; letter-spacing:-.06em; }
+  .task-group { margin-top:30px; }
+  .task-group-head { padding-bottom:13px; font-size:15px; line-height:1; letter-spacing:-.025em; font-weight:700; }
+  .task-group.rush .task-group-head .ico, .task-group.rush .task-group-head .count { display:none; }
+  .quick-strip { gap:12px; padding-top:15px; scroll-snap-type:x mandatory; }
+  .quick-task { --folder-bg:#FFA58C; flex-basis:min(78vw, 292px); min-height:188px; padding:18px; border-radius:0 18px 18px 18px; border-color:color-mix(in srgb, #8a3d2a 15%, transparent); scroll-snap-align:start; }
+  .quick-task::before { top:-12px; width:116px; height:15px; border-radius:13px 13px 0 0; border-color:color-mix(in srgb, #8a3d2a 15%, transparent); }
+  .quick-status { padding:5px 9px; font-size:12px; }
+  .quick-name { margin-top:18px; font-size:22px; line-height:1.08; }
+  .quick-project { margin-top:12px; font-size:13px; }
+  .quick-project .ico { width:15px; height:15px; }
+  .quick-meta { padding-top:10px; font-size:12px; }
+  .quick-progress { display:flex; align-items:center; gap:9px; margin-top:12px; }
+  .quick-progress-track { height:5px; flex:1; overflow:hidden; border-radius:99px; background:color-mix(in srgb, white 68%, transparent); }
+  .quick-progress-fill { display:block; height:100%; border-radius:inherit; background:#151512; }
+  .quick-progress-value { min-width:31px; text-align:right; font-size:12px; font-weight:720; }
+  .date-strip { display:grid; grid-template-columns:repeat(5, 1fr); gap:8px; margin:28px 0 24px; }
+  .date-chip { min-width:0; padding:10px 4px 9px; border-radius:15px; color:var(--text-3); background:#f4f4f2; text-align:center; }
+  .date-chip span { display:block; font-size:11px; font-weight:580; }
+  .date-chip b { display:block; margin-top:5px; font-size:20px; font-weight:690; }
+  .date-chip.on { color:#111; background:var(--soft-yellow); box-shadow:0 5px 16px rgba(246,233,33,.24); }
+  .today-heading { margin:0 0 14px; font-size:28px; line-height:1.05; font-weight:700; letter-spacing:-.045em; }
+  .planner-list { display:flex; flex-direction:column; gap:12px; }
+  .planner-list .designer-task { min-height:112px; padding:18px; gap:14px; border-radius:18px; border-color:#e2e2de; background:#fff; box-shadow:0 8px 24px rgba(25,25,20,.05); }
+  .planner-list .task-check { width:30px; height:30px; margin-top:2px; border-width:1.5px; }
+  .planner-list .designer-task-name { font-size:19px; font-weight:650; line-height:1.18; }
+  .planner-list .designer-task-meta { margin-top:12px; gap:7px; }
+  .planner-list .designer-chip { padding:6px 9px; border-radius:9px; font-size:12px; background:#f3f3f1; }
+  .planner-list .designer-chip .ico { width:14px; height:14px; fill:currentColor; }
+  .planner-empty { min-height:96px; display:flex; align-items:center; padding:18px; border:1px dashed #dcdcd8; border-radius:18px; color:var(--text-3); font-size:14px; }
+  .manager-focus { --folder-bg:var(--soft-purple); }
+  .manager-assignee { display:flex; align-items:center; gap:6px; margin-top:10px; color:color-mix(in srgb, var(--folder-ink) 76%, transparent); font-size:12px; font-weight:600; }
+  .manager-assignee .ico { width:14px; height:14px; fill:currentColor; }
+  .manager-task-main { display:block; width:100%; text-align:left; }
+  .manager-task-top { display:flex; align-items:flex-start; gap:10px; }
+  .manager-task-top .designer-task-name { flex:1; }
+  .manager-task-status { flex:0 0 auto; padding:5px 8px; border-radius:99px; font-size:11px; font-weight:650; background:#f3f3f1; color:var(--text-2); }
+  body:not(.designer-mode) .bnav { display:none; }
+  body:not(.designer-mode) #app { padding-bottom:calc(82px + var(--safe-b)); }
+  body:not(.designer-mode) .fab { left:16px; right:16px; bottom:calc(12px + var(--safe-b)); width:auto; height:54px; border-radius:18px; display:flex; align-items:center; justify-content:center; gap:9px; background:#111; color:#fff; }
+  body:not(.designer-mode) .fab span { display:inline; font-size:14px; font-weight:680; }
+
+  /* ---------- Vazifalar (bosqichlar) ---------- */
+  .segs { display: flex; overflow-x: auto; gap: 6px; padding: 4px var(--gut) 12px; scrollbar-width: none; }
+  .segs::-webkit-scrollbar { display: none; }
+  .seg {
+    flex: 0 0 auto; padding: 7px 12px; border-radius: 20px;
+    font-size: var(--f-md); font-weight: 580; white-space: nowrap;
+    background: var(--surface); border: 1px solid var(--line); color: var(--text-2);
+    display: flex; align-items: center; gap: 6px;
+    transition: background 0.16s, color 0.16s, border-color 0.16s, transform 0.12s var(--ease);
+  }
+  .seg:active { transform: scale(0.95); }
+  .seg i { width: 6px; height: 6px; border-radius: 50%; background: var(--sc); flex: 0 0 auto; }
+  .seg .count { font-size: var(--f-xs); font-weight: 700; color: var(--text-3); }
+  .seg.active { background: color-mix(in srgb, var(--sc) 15%, var(--surface)); border-color: color-mix(in srgb, var(--sc) 45%, transparent); color: var(--text); }
+  .seg.active .count { color: var(--sc); }
+  .distro { display: flex; gap: 2px; height: 4px; margin: 6px var(--gut); border-radius: 4px; overflow: hidden; }
+  .distro i { display: block; height: 100%; opacity: 0.4; transition: opacity 0.2s; }
+  .distro i.on { opacity: 1; }
+  .swipe-hint { text-align: center; font-size: var(--f-sm); color: var(--text-3); padding: 14px var(--gut) 0; opacity: 0.6; }
+
+  /* ---------- Ma'lumot sahifalari ---------- */
+  .subsegs { display: flex; overflow-x: auto; gap: 6px; padding: 2px var(--gut) 10px; scrollbar-width: none; }
+  .subsegs::-webkit-scrollbar { display: none; }
+  .subseg {
+    flex: 0 0 auto; padding: 6.5px 12px; border-radius: 20px; font-size: var(--f-md); font-weight: 580;
+    white-space: nowrap; background: var(--surface); border: 1px solid var(--line); color: var(--text-2);
+    transition: transform 0.12s var(--ease);
+  }
+  .subseg:active { transform: scale(0.95); }
+  .subseg.active { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 640; }
+
+  .prose { padding: 2px var(--gut) 12px; }
+  .prose .c-heading { font-size: 16px; font-weight: 680; margin: 26px 0 10px; letter-spacing: -0.02em; padding-bottom: 9px; border-bottom: 1px solid var(--line); }
+  .prose .c-heading:first-child { margin-top: 4px; }
+  .prose .c-subheading { font-size: var(--f-sm); font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 0.08em; margin: 22px 0 7px; }
+  .prose .c-subheading:first-child { margin-top: 4px; }
+  .prose .c-text { font-size: var(--f-lg); line-height: 1.62; margin: 0 0 11px; }
+  .prose ul.c-list, .prose ol.c-numbered { margin: 0 0 12px; padding-left: 0; list-style: none; counter-reset: n; }
+  .prose ul.c-list li, .prose ol.c-numbered li { font-size: var(--f-lg); line-height: 1.58; margin-bottom: 9px; padding-left: 26px; position: relative; }
+  .prose ul.c-list li::before { content: ""; position: absolute; left: 7px; top: 9px; width: 5px; height: 5px; border-radius: 50%; background: var(--accent); }
+  .prose ol.c-numbered li::before { counter-increment: n; content: counter(n); position: absolute; left: 0; top: 2px; font-size: var(--f-sm); font-weight: 700; color: var(--accent); width: 18px; text-align: center; }
+  .prose .c-note { font-size: var(--f-md); line-height: 1.55; color: var(--text-2); background: var(--surface); border: 1px solid var(--line); border-left: 2px solid var(--accent); border-radius: var(--r-sm); padding: 11px 13px; margin: 14px 0 12px; }
+
+  /* ---------- Suzuvchi navigatsiya ---------- */
+  .bnav {
+    position: fixed; z-index: 40; left: 14px; right: 14px; bottom: calc(var(--nav-gap) + var(--safe-b));
+    height: var(--nav-h); border-radius: 999px;
+    background: color-mix(in srgb, white 90%, transparent);
+    backdrop-filter: saturate(150%) blur(20px); -webkit-backdrop-filter: saturate(150%) blur(20px);
+    border: 1px solid rgba(20,20,18,.10); box-shadow: 0 12px 30px rgba(20,20,18,.14);
+    display: flex; align-items: center; padding: 6px;
   }
   .nav-item {
-    flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px;
-    color: var(--text-dim); font-size: 11px; cursor: pointer; background: none; border: none;
-    padding: 8px 0;
+    flex: 1; height: 100%; border-radius: 999px; min-width: 0;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    color: var(--text-3); transition: flex 0.26s var(--ease), background 0.2s, color 0.2s;
   }
-  .nav-item svg { width: 23px; height: 23px; stroke: currentColor; fill: none; stroke-width: 1.8; }
-  .nav-item.active { color: var(--accent); }
+  .nav-item .ico { width: 20px; height: 20px; flex: 0 0 auto; transition: transform 0.2s var(--ease); }
+  .nav-item:active .ico { transform: scale(0.86); }
+  .nav-item .lbl { font-size: var(--f-md); font-weight: 680; max-width: 0; opacity: 0; overflow: hidden; white-space: nowrap; transition: max-width 0.26s var(--ease), opacity 0.2s; }
+  .nav-item.active { flex: 1.9; background: var(--accent); color: #000; }
+  .nav-item.active .ico { stroke-width: 2; }
+  .nav-item.active .lbl { max-width: 90px; opacity: 1; }
+
+  /* ---------- Yangi vazifa tugmasi ---------- */
+  .fab {
+    position: fixed; z-index: 41; right: 18px;
+    bottom: calc(var(--nav-h) + var(--nav-gap) + var(--safe-b) + 14px);
+    width: 50px; height: 50px; border-radius: 50%;
+    background: var(--accent); color: #000;
+    display: grid; place-items: center;
+    box-shadow: 0 8px 20px rgba(0,0,0,.15), 0 4px 12px rgba(0,0,0,.12);
+    transition: transform 0.15s var(--ease), opacity 0.2s;
+  }
+  .fab:active { transform: scale(0.9); }
+  .fab .ico { width: 23px; height: 23px; stroke-width: 2.2; }
+
+  /* ---------- Modal sahifa (tafsilot / yangi vazifa) ---------- */
+  .page {
+    position: fixed; inset: 0; z-index: 70; background: var(--bg);
+    display: flex; flex-direction: column;
+    transform: translateX(100%); transition: transform 0.3s var(--ease);
+    visibility: hidden;
+  }
+  .page.open { transform: none; visibility: visible; }
+  .page-bar {
+    flex: 0 0 auto; display: flex; align-items: center; gap: 10px;
+    padding: calc(10px + var(--safe-t)) var(--gut) 10px;
+    border-bottom: 1px solid rgba(0,0,0,.06); background: rgba(255,255,255,.92);
+    backdrop-filter: saturate(160%) blur(18px); -webkit-backdrop-filter: saturate(160%) blur(18px);
+  }
+  .page-bar .pt { flex: 1; min-width: 0; font-size: 16px; font-weight: 700; letter-spacing: -0.025em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #detail .page-bar .icon-btn { border: 0; background: var(--surface-2); }
+  .page-body { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-bottom: calc(24px + var(--safe-b)); }
+  .txt-btn { font-size: var(--f-lg); font-weight: 680; color: var(--accent); padding: 6px 4px; }
+  .txt-btn[disabled] { color: var(--text-3); opacity: 0.6; }
+
+  /* Tafsilot */
+  .d-head { padding: 24px 20px 13px; }
+  .d-kicker { color: var(--text-3); font-size: 12px; font-weight: 720; letter-spacing: .05em; text-transform: uppercase; margin-bottom: 9px; }
+  .d-title { font-size: clamp(30px, 8vw, 38px); font-weight: 760; line-height: 1.05; letter-spacing: -.048em; margin: 0; text-wrap: balance; }
+  .d-proj { font-size: 15px; color: var(--text-2); font-weight: 590; margin-top: 12px; display: flex; align-items: center; gap: 7px; }
+  .d-proj .ico { color: var(--text-3); }
+  .brief-meta {
+    margin: 0 20px 10px; padding: 5px; border-radius: 20px; background: var(--surface-2);
+    display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px;
+  }
+  .brief-meta-item {
+    min-height: 66px; padding: 11px 12px; border-radius: 16px; background: rgba(255,255,255,.86);
+    display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; gap: 7px;
+    text-align: left; min-width: 0;
+  }
+  button.brief-meta-item:active { transform: scale(.98); background: #fff; }
+  .brief-meta-item .k { color: var(--text-3); font-size: 11px; font-weight: 670; display: flex; align-items: center; gap: 5px; }
+  .brief-meta-item .k .ico { width: 13px; height: 13px; }
+  .brief-meta-item .v { width: 100%; color: var(--text); font-size: 14px; line-height: 1.25; font-weight: 690; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .brief-meta-item .v.late { color: #c5221f; }
+  .brief-meta-item .v.status-v { display: flex; align-items: center; gap: 7px; }
+  .brief-meta-item .v.status-v i { width: 8px; height: 8px; border-radius: 50%; flex: 0 0 auto; }
+  .brief-meta-item.wide { grid-column: 1 / -1; min-height: 58px; }
+  .brief-meta-item .people { display: flex; gap: 10px; max-width: 100%; overflow: hidden; }
+  .brief-meta-item .person { white-space: nowrap; }
+
+  .d-note { padding: 12px 20px 0; font-size: 13px; color: var(--text-3); line-height: 1.5; }
+  .d-actions { padding: 16px var(--gut) 0; display: flex; flex-direction: column; gap: 9px; }
+  .btn {
+    display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%;
+    font-size: var(--f-lg); font-weight: 660; padding: 13px; border-radius: var(--r-md);
+    text-decoration: none; transition: transform 0.12s var(--ease);
+  }
+  .btn:active { transform: scale(0.985); }
+  .btn-primary { background: var(--accent); color: var(--accent-ink); }
+  .btn-ghost { background: var(--surface); border: 1px solid var(--line); color: var(--text-2); }
+
+  /* Notion kontenti */
+  .brief-label { margin: 30px 20px 4px; color: var(--text-3); font-size: 12px; font-weight: 730; letter-spacing: .06em; text-transform: uppercase; }
+  .ncontent { padding: 0 20px 24px; overflow-wrap: anywhere; }
+  .ncontent .n-h1 { font-size: 28px; line-height: 1.12; font-weight: 750; margin: 32px 0 13px; letter-spacing: -.04em; }
+  .ncontent .n-h2 { font-size: 23px; line-height: 1.18; font-weight: 740; margin: 32px 0 12px; letter-spacing: -.035em; }
+  .ncontent .n-h3 { font-size: 17px; line-height: 1.25; font-weight: 720; margin: 25px 0 10px; color: var(--text); letter-spacing: -.02em; }
+  .ncontent p { font-size: 16.5px; line-height: 1.62; letter-spacing: -.012em; margin: 0 0 16px; color: #2c2c2e; }
+  .ncontent a { color: var(--ios-blue); text-decoration: none; }
+  .ncontent ul, .ncontent ol { margin: 0 0 18px; padding-left: 0; list-style: none; counter-reset: nn; }
+  .ncontent li { font-size: 16.5px; line-height: 1.56; letter-spacing: -.012em; margin-bottom: 10px; padding-left: 28px; position: relative; color: #2c2c2e; }
+  .ncontent ul > li::before { content: ""; position: absolute; left: 8px; top: 11px; width: 6px; height: 6px; border-radius: 50%; background: #1d1d1f; }
+  .ncontent ol > li::before { counter-increment: nn; content: counter(nn) "."; position: absolute; left: 0; top: 0; font-size: 15px; font-weight: 700; color: var(--text-3); width: 22px; text-align: left; }
+  .ncontent .n-todo { display: flex; gap: 11px; align-items: flex-start; font-size: 16px; line-height: 1.52; margin-bottom: 12px; }
+  .ncontent .n-todo .box {
+    flex: 0 0 auto; width: 20px; height: 20px; border-radius: 6px; margin-top: 2px;
+    border: 1.6px solid var(--line-2); display: grid; place-items: center;
+  }
+  .ncontent .n-todo.done .box { background: var(--accent); border-color: var(--accent); }
+  .ncontent .n-todo.done .box svg { width: 10px; height: 10px; stroke: var(--accent-ink); stroke-width: 3; }
+  .ncontent .n-todo.done .t { color: var(--text-3); text-decoration: line-through; }
+  .ncontent blockquote { margin: 4px 0 18px; padding: 3px 0 3px 16px; border-left: 3px solid #1d1d1f; color: var(--text-2); font-size: 17px; line-height: 1.55; font-style: italic; }
+  .ncontent .n-callout {
+    display: flex; gap: 11px; background: #fff9ca; border: 0;
+    border-radius: 17px; padding: 15px 16px; margin: 5px 0 18px; font-size: 15.5px; line-height: 1.5; color: #3d390d;
+  }
+  .ncontent .n-callout.warn { background: #ffe6e6; color: #6f2020; }
+  .ncontent .n-callout.info { background: #eaf4ff; color: #163e63; }
+  .ncontent .n-callout .e { flex: 0 0 auto; font-size: 17px; }
+  .ncontent pre {
+    background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-sm);
+    padding: 12px; overflow-x: auto; margin: 0 0 12px;
+    font-size: var(--f-md); line-height: 1.5; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  .ncontent code { background: var(--surface-2); border-radius: 4px; padding: 1px 5px; font-size: 0.88em; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+  .ncontent pre code { background: none; padding: 0; }
+  .ncontent hr { border: none; border-top: 1px solid var(--line); margin: 28px 0; }
+  .n-image { width: 100%; display: block; border: 0; padding: 0; margin: 6px 0 9px; border-radius: 18px; overflow: hidden; background: var(--surface-2); text-align: left; position: relative; }
+  .n-image img { width: 100%; height: auto; max-height: 520px; object-fit: cover; display: block; }
+  .n-image::after { content: "↗"; position: absolute; right: 10px; top: 10px; width: 29px; height: 29px; border-radius: 50%; display: grid; place-items: center; background: rgba(0,0,0,.62); color: #fff; font-size: 13px; backdrop-filter: blur(8px); }
+  .n-image.failed { min-height: 130px; display: grid; place-items: center; color: var(--text-3); font-size: 13px; }
+  .n-image.failed::before { content: "Rasmni yuklab bo‘lmadi"; }
+  .n-image.failed img, .n-image.failed::after { display: none; }
+  .ncontent .n-cap { font-size: 12.5px; line-height: 1.4; color: var(--text-3); margin: 0 3px 18px; }
+  .ncontent .n-file { display: flex; align-items: center; gap: 12px; background: var(--surface-2); border: 0; border-radius: 16px; padding: 13px 14px; margin: 0 0 10px; min-height: 58px; font-size: 14px; color: var(--text); text-decoration: none; }
+  .n-file .file-ico { width: 34px; height: 34px; border-radius: 10px; background: #fff; display: grid; place-items: center; color: var(--text-2); flex: 0 0 auto; }
+  .n-file .file-copy { flex: 1; min-width: 0; }
+  .n-file .file-title { display: block; font-weight: 680; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .n-file .file-host { display: block; margin-top: 2px; color: var(--text-3); font-size: 11.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .n-file .file-arrow { color: var(--text-3); }
+  .ncontent .n-sub { padding-left: 17px; border-left: 2px solid var(--line); margin: 8px 0 14px 6px; }
+  .n-toggle { margin: 8px 0 16px; border: 1px solid var(--line); border-radius: 15px; overflow: hidden; }
+  .n-toggle summary { list-style: none; cursor: pointer; padding: 13px 14px; font-weight: 680; font-size: 15px; }
+  .n-toggle summary::-webkit-details-marker { display: none; }
+  .n-toggle summary::after { content: "+"; float: right; color: var(--text-3); }
+  .n-toggle[open] summary::after { content: "−"; }
+  .n-toggle .n-sub { margin: 0; padding: 0 14px 12px; border: 0; }
+
+  /* Rasmni to'liq ko'rish */
+  .lightbox { position: fixed; inset: 0; z-index: 110; background: rgba(0,0,0,.94); display: none; flex-direction: column; padding: calc(10px + var(--safe-t)) 10px calc(10px + var(--safe-b)); }
+  .lightbox.open { display: flex; }
+  .lightbox-top { display: flex; justify-content: flex-end; padding-bottom: 8px; }
+  .lightbox .icon-btn { background: rgba(255,255,255,.14); border: 0; color: #fff; }
+  .lightbox-stage { flex: 1; min-height: 0; display: grid; place-items: center; overflow: auto; }
+  .lightbox img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 4px; }
+
+  /* Forma */
+  .form { padding: 14px var(--gut) 0; display: flex; flex-direction: column; gap: 16px; }
+  .field label { display: block; font-size: var(--f-sm); font-weight: 680; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 7px; }
+  .field label .req { color: var(--danger); }
+  .input, .select, .ta {
+    width: 100%; background: var(--surface); border: 1px solid var(--line); color: var(--text);
+    border-radius: var(--r-sm); padding: 12px 13px; font-size: var(--f-lg); font-family: inherit;
+    appearance: none; -webkit-appearance: none;
+  }
+  .input:focus, .select:focus, .ta:focus { outline: none; border-color: color-mix(in srgb, var(--accent) 45%, transparent); }
+  .ta { resize: none; line-height: 1.4; }
+  .select { background-image: none; }
+  .select option { background: var(--surface-2); color: var(--text); }
+  .row2 { display: flex; gap: 10px; }
+  .row2 > * { flex: 1; min-width: 0; }
+  .chips { display: flex; flex-wrap: wrap; gap: 7px; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--surface); border: 1px solid var(--line); color: var(--text-2);
+    border-radius: 20px; padding: 7px 12px; font-size: var(--f-md); font-weight: 580;
+    transition: transform 0.12s var(--ease);
+  }
+  .chip:active { transform: scale(0.95); }
+  .chip i { width: 7px; height: 7px; border-radius: 50%; flex: 0 0 auto; }
+  .chip.on { background: var(--accent-soft); border-color: color-mix(in srgb, var(--accent) 40%, transparent); color: var(--text); }
+  .chip.p.on[data-p="Urgent 🔥"] { background: color-mix(in srgb, var(--prio-urgent) 16%, transparent); border-color: color-mix(in srgb, var(--prio-urgent) 45%, transparent); color: var(--prio-urgent); }
+  .chip.p.on[data-p="High 🥵"] { background: color-mix(in srgb, var(--prio-high) 16%, transparent); border-color: color-mix(in srgb, var(--prio-high) 45%, transparent); color: var(--prio-high); }
+  .form-err { color: var(--danger); font-size: var(--f-md); padding: 0 var(--gut); }
+
+  /* ---------- Pastki panel (holat tanlash) ---------- */
+  .scrim { position: fixed; inset: 0; z-index: 80; background: rgba(0,0,0,0.55); backdrop-filter: blur(2px); opacity: 0; pointer-events: none; transition: opacity 0.22s; }
+  .scrim.open { opacity: 1; pointer-events: auto; }
+  .sheet {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 81;
+    background: var(--surface); border-radius: var(--r-lg) var(--r-lg) 0 0; border-top: 1px solid var(--line-2);
+    padding: 8px var(--gut) calc(16px + var(--safe-b));
+    transform: translateY(101%); transition: transform 0.28s var(--ease);
+    max-height: 80%; overflow-y: auto;
+  }
+  .sheet.open { transform: none; }
+  .grab { width: 34px; height: 4px; border-radius: 4px; background: var(--line-2); margin: 2px auto 12px; }
+  .sheet h3 { font-size: var(--f-sm); font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.07em; margin: 0 0 10px; }
+  .opt {
+    display: flex; align-items: center; gap: 10px; width: 100%; text-align: left;
+    padding: 12px 12px; border-radius: var(--r-sm); font-size: var(--f-lg); font-weight: 580;
+    transition: background 0.14s;
+  }
+  .opt:active { background: var(--surface-2); }
+  .opt i { width: 8px; height: 8px; border-radius: 50%; flex: 0 0 auto; }
+  .opt .ck { margin-left: auto; color: var(--accent); }
+  .opt[disabled] { opacity: 0.4; }
+
+  /* Toast */
+  .toast {
+    position: fixed; left: 50%; bottom: calc(var(--nav-h) + var(--nav-gap) + var(--safe-b) + 22px);
+    transform: translate(-50%, 14px); z-index: 90;
+    background: var(--surface-3); border: 1px solid var(--line-2); color: var(--text);
+    padding: 10px 16px; border-radius: 20px; font-size: var(--f-md); font-weight: 600;
+    opacity: 0; pointer-events: none; transition: opacity 0.2s, transform 0.2s var(--ease);
+    max-width: calc(100% - 40px); text-align: center;
+  }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+  .toast.err { border-color: color-mix(in srgb, var(--danger) 45%, transparent); color: var(--danger); }
 
   .hidden { display: none !important; }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }
 </style>
 </head>
 <body>
+
+<svg style="display:none" aria-hidden="true">
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 10.4 12 3.2l9 7.2"/><path d="M5.4 9.3V19a1.8 1.8 0 0 0 1.8 1.8h9.6A1.8 1.8 0 0 0 18.6 19V9.3"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="15" rx="2.6"/><path d="M8 9.5h8M8 13h8M8 16.5h4.5"/></symbol>
+  <symbol id="i-agency" viewBox="0 0 24 24"><path d="M4.5 20.5V6.6l6.5-2.9 6.5 2.9v13.9"/><path d="M9.3 20.5v-4.4h3.4v4.4M3 20.5h18"/><path d="M8.6 9.4h1M13.4 9.4h1M8.6 12.6h1M13.4 12.6h1"/></symbol>
+  <symbol id="i-book" viewBox="0 0 24 24"><path d="M4.5 5.2A2 2 0 0 1 6.5 3.2h13v15.4h-13a2 2 0 0 0-2 2z"/><path d="M4.5 18.6a2 2 0 0 0 2 2h13"/><path d="M8.6 7.6h6.4M8.6 11h4.4"/></symbol>
+  <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3.2 6.6a1.6 1.6 0 0 1 1.6-1.6h4l2 2.4h7.4a1.6 1.6 0 0 1 1.6 1.6v8.4a1.6 1.6 0 0 1-1.6 1.6H4.8a1.6 1.6 0 0 1-1.6-1.6z"/></symbol>
+  <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3.4" y="5.2" width="17.2" height="15.2" rx="2.4"/><path d="M3.4 9.8h17.2M8 3.2v3.6M16 3.2v3.6"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8.4" r="3.6"/><path d="M4.8 20.2a7.2 7.2 0 0 1 14.4 0"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path fill="currentColor" stroke="none" d="M10.46 3.92a1.78 1.78 0 0 1 3.08 0l8.04 13.92a1.78 1.78 0 0 1-1.54 2.67H3.96a1.78 1.78 0 0 1-1.54-2.67z"/><path stroke="#fff" stroke-width="2" d="M12 9.1v5.2M12 17.45v.1"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20.4 12a8.4 8.4 0 1 1-2.5-6"/><path d="M20.4 4.2V10h-5.8"/></symbol>
+  <symbol id="i-inbox" viewBox="0 0 24 24"><path d="M3.4 13.6h4.2l1.6 2.8h5.6l1.6-2.8h4.2"/><path d="M6 4.6h12l3 9v4.8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4.8z"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.6"/><path d="M8.6 12.2l2.4 2.4 4.4-4.6"/></symbol>
+  <symbol id="i-tick" viewBox="0 0 24 24"><path d="M5 12.4l4.6 4.6L19 7.4"/></symbol>
+  <symbol id="i-ext" viewBox="0 0 24 24"><path d="M13.6 4.4h6v6"/><path d="M19.6 4.4 10.8 13.2"/><path d="M17.6 14v4.6a2 2 0 0 1-2 2H5.4a2 2 0 0 1-2-2V8.4a2 2 0 0 1 2-2H10"/></symbol>
+  <symbol id="i-flag" viewBox="0 0 24 24"><path d="M5.4 21V3.8"/><path d="M5.4 4.6h12l-2.2 4 2.2 4h-12z"/></symbol>
+  <symbol id="i-left" viewBox="0 0 24 24"><path d="M14.6 5.4 8 12l6.6 6.6"/></symbol>
+  <symbol id="i-right" viewBox="0 0 24 24"><path d="M9.4 5.4 16 12l-6.6 6.6"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path d="m5.4 9.4 6.6 6.6 6.6-6.6"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.7"/><path d="M9.6 9.3a2.5 2.5 0 1 1 4.15 1.86c-.95.8-1.75 1.35-1.75 2.84M12 17.25v.1"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.7"/><path d="M12 10.8v5M12 7.8v.1"/></symbol>
+  <symbol id="i-file" viewBox="0 0 24 24"><path d="M13.4 3.4H6.6a1.8 1.8 0 0 0-1.8 1.8v13.6a1.8 1.8 0 0 0 1.8 1.8h10.8a1.8 1.8 0 0 0 1.8-1.8V9z"/><path d="M13.4 3.4V9h5.8"/></symbol>
+  <symbol id="i-task-fill" viewBox="0 0 24 24"><rect x="3.2" y="3.2" width="17.6" height="17.6" rx="4.2" fill="currentColor" stroke="none"/><path d="m8.1 12.1 2.5 2.5 5.4-5.5" stroke="#fff" stroke-width="2.2"/></symbol>
+  <symbol id="i-folder-fill" viewBox="0 0 24 24"><path fill="currentColor" stroke="none" d="M3.1 7a2.1 2.1 0 0 1 2.1-2.1h4l1.9 2.3h7.7A2.1 2.1 0 0 1 20.9 9v8a2.1 2.1 0 0 1-2.1 2.1H5.2A2.1 2.1 0 0 1 3.1 17z"/></symbol>
+  <symbol id="i-cal-fill" viewBox="0 0 24 24"><rect x="3.2" y="4.3" width="17.6" height="16.2" rx="3.2" fill="currentColor" stroke="none"/><path d="M3.2 9.4h17.6M8 3.2v3.5M16 3.2v3.5" stroke="#fff" stroke-width="1.7"/></symbol>
+  <symbol id="i-user-fill" viewBox="0 0 24 24"><circle cx="12" cy="8.2" r="4" fill="currentColor" stroke="none"/><path d="M4.2 20.2a7.8 7.8 0 0 1 15.6 0" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13.4 2.6 4.6 13.8h6.2l-1.2 7.6 8.8-11.2h-6.2z"/></symbol>
+</svg>
+
 <div id="app">
-  <div class="page-header">
-    <h1 id="header-title">Creative Dprt</h1>
-    <p class="subtitle" id="header-subtitle">Yuklanmoqda...</p>
-  </div>
-  <div id="view"></div>
+  <div id="ptr"><div class="ring"></div></div>
+  <header class="topbar" id="topbar">
+    <img class="brand-logo" src="assets/dprt-logo-horizontal.svg" alt="Creative Dprt">
+    <div class="tt">
+      <h1 id="header-title">Creative Dprt</h1>
+      <p class="subtitle" id="header-subtitle">Yuklanmoqda…</p>
+    </div>
+    <button class="icon-btn hidden" id="cal-toggle" aria-label="Kalendar"><svg class="ico"><use href="#i-cal"/></svg></button>
+    <button class="icon-btn" id="refresh-btn" aria-label="Yangilash"><svg class="ico"><use href="#i-refresh"/></svg></button>
+  </header>
+  <main id="view"></main>
 </div>
 
-<nav class="bottom-nav" id="bottom-nav">
-  <button class="nav-item active" data-nav="home">
-    <svg viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9.5"/></svg>
-    Home
-  </button>
-  <button class="nav-item" data-nav="tasks">
-    <svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 9h6M9 13h6M9 17h3"/></svg>
-    Vazifalar
-  </button>
-  <button class="nav-item" data-nav="agency">
-    <svg viewBox="0 0 24 24"><path d="M4 21V6l7-3 7 3v15"/><path d="M9 21v-5h4v5M4 21h16"/></svg>
-    Agentlik
-  </button>
-  <button class="nav-item" data-nav="guides">
-    <svg viewBox="0 0 24 24"><path d="M4 5a2 2 0 0 1 2-2h12v16H6a2 2 0 0 0-2 2z"/><path d="M4 19a2 2 0 0 0 2 2h12"/></svg>
-    Qo'llanma
-  </button>
+<nav class="bnav" id="bottom-nav">
+  <button class="nav-item active" data-nav="home"><svg class="ico"><use href="#i-task-fill"/></svg><span class="lbl">Task</span></button>
+  <button class="nav-item" data-nav="tasks"><svg class="ico"><use href="#i-help"/></svg><span class="lbl">?</span></button>
+  <button class="nav-item" data-nav="guides"><svg class="ico"><use href="#i-book"/></svg><span class="lbl">Qo'llanma</span></button>
+  <button class="nav-item" data-nav="agency"><svg class="ico"><use href="#i-info"/></svg><span class="lbl">About</span></button>
 </nav>
+
+<button class="fab hidden" id="fab" aria-label="Yangi topshiriq"><svg class="ico"><use href="#i-plus"/></svg><span>Yangi topshiriq</span></button>
+
+<!-- Tafsilot sahifasi -->
+<section class="page" id="detail">
+  <div class="page-bar">
+    <button class="icon-btn" data-close="detail"><svg class="ico"><use href="#i-left"/></svg></button>
+    <span class="pt">Topshiriq</span>
+    <a class="icon-btn" id="d-notion" target="_blank" rel="noopener" aria-label="Notion'da ochish"><svg class="ico"><use href="#i-ext"/></svg></a>
+  </div>
+  <div class="page-body" id="d-body"></div>
+</section>
+
+<!-- Yangi vazifa sahifasi -->
+<section class="page" id="create">
+  <div class="page-bar">
+    <button class="icon-btn" data-close="create"><svg class="ico"><use href="#i-x"/></svg></button>
+    <span class="pt">Yangi vazifa</span>
+    <button class="txt-btn" id="c-save">Saqlash</button>
+  </div>
+  <div class="page-body" id="c-body"></div>
+</section>
+
+<div class="scrim" id="scrim"></div>
+<section class="sheet" id="sheet" role="dialog" aria-modal="true"></section>
+<section class="lightbox" id="image-viewer" role="dialog" aria-modal="true" aria-label="Rasmni ko'rish">
+  <div class="lightbox-top"><button class="icon-btn" id="image-close" aria-label="Yopish"><svg class="ico"><use href="#i-x"/></svg></button></div>
+  <div class="lightbox-stage"><img id="image-full" alt=""></div>
+</section>
+<div class="toast" id="toast"></div>
 
 <script>
 const tg = window.Telegram?.WebApp;
-tg?.ready();
-tg?.expand();
+const BG = "#ffffff";
 
-const STATUS_META = {
-  "Draft":          { label: "Draft",          color: "var(--col-draft)" },
-  "G'oya kerak":    { label: "G'oya kerak",    color: "var(--col-goya)" },
-  "Tasdiqlanyapti": { label: "Tasdiqlanyapti", color: "var(--col-tasdiq)" },
-  "Dizaynda":       { label: "Dizaynda",       color: "var(--col-dizayn)" },
-  "Art direktorda": { label: "Art direktorda", color: "var(--col-artdir)" },
-  "Mijozda":        { label: "Mijozda",        color: "var(--col-mijoz)" },
-  "Finish":         { label: "Finish",         color: "var(--col-finish)" },
-  "Archive":        { label: "Archive",        color: "var(--col-archive)" },
+/* ==================== Telegram ==================== */
+function haptic(s) { try { tg?.HapticFeedback?.impactOccurred(s || "light"); } catch (e) {} }
+function hapticSelect() { try { tg?.HapticFeedback?.selectionChanged(); } catch (e) {} }
+function hapticNotify(t) { try { tg?.HapticFeedback?.notificationOccurred(t || "success"); } catch (e) {} }
+
+function syncViewport() {
+  const h = tg?.viewportStableHeight || window.innerHeight;
+  document.documentElement.style.setProperty("--vh", h + "px");
+}
+(function initTelegram() {
+  if (!tg) { syncViewport(); return; }
+  tg.ready(); tg.expand();
+  try { tg.setHeaderColor(BG); } catch (e) {}
+  try { tg.setBackgroundColor(BG); } catch (e) {}
+  try { tg.setBottomBarColor(BG); } catch (e) {}
+  try { tg.disableVerticalSwipes(); } catch (e) {}
+  tg.onEvent("viewportChanged", syncViewport);
+  syncViewport();
+})();
+window.addEventListener("resize", syncViewport);
+
+/* ==================== Doimiylar ==================== */
+// Notion option `color` qiymatini yumshoq, o'qilishi oson UI ranglariga o'tkazamiz.
+const NOTION_COLORS = {
+  default: { bg: "#f3f3f1", ink: "#555550", dot: "#73736c" },
+  gray:    { bg: "#efefed", ink: "#5d5d57", dot: "#777770" },
+  brown:   { bg: "#f4eee8", ink: "#795c47", dot: "#9a7356" },
+  orange:  { bg: "#fcead9", ink: "#a3591d", dot: "#d17a2c" },
+  yellow:  { bg: "#fff5cc", ink: "#8b6a00", dot: "#b68b00" },
+  green:   { bg: "#e5f2e8", ink: "#39704a", dot: "#559565" },
+  blue:    { bg: "#e3effa", ink: "#356d9d", dot: "#548fbe" },
+  purple:  { bg: "#f0e9f7", ink: "#725592", dot: "#9676b8" },
+  pink:    { bg: "#fae8ef", ink: "#9d4d6a", dot: "#c77996" },
+  red:     { bg: "#fbe8e6", ink: "#a64c42", dot: "#d87669" },
 };
-const PRIO_META = {
-  "Urgent 🔥": { color: "var(--prio-urgent)", bg: "rgba(224,92,77,0.15)" },
-  "High 🥵":   { color: "var(--prio-high)",   bg: "rgba(224,185,60,0.15)" },
-  "Normal":    { color: "var(--prio-normal)", bg: "rgba(77,143,224,0.15)" },
+const PRIO = {
+  "Urgent 🔥": { key: "urgent", label: "Urgent", rank: 0 },
+  "High 🥵":   { key: "high",   label: "High",   rank: 1 },
+  "Normal":    { key: "normal", label: "Normal", rank: 2 },
 };
 const DONE_STATUSES = ["Finish", "Archive"];
-const DOW = ["Yak", "Dush", "Sesh", "Chor", "Pay", "Jum", "Shan"];
+const STATUS_PROGRESS = {
+  "Draft": 10,
+  "G'oya kerak": 20,
+  "Tasdiqlanyapti": 35,
+  "Dizaynda": 55,
+  "Art direktorda": 78,
+  "Mijozda": 90,
+  "Finish": 100,
+  "Archive": 100,
+};
+// Kimning navbati: dizaynerda ish turgan bosqichlar / art direktorda turgan bosqichlar
+const COURT_DESIGNER = ["Draft", "G'oya kerak", "Dizaynda"];
+const COURT_MANAGER = ["Art direktorda", "Tasdiqlanyapti"];
 
-let boardData = null;      // butun ma'lumot (bir marta yuklanadi)
+const MONTHS = ["Yanvar","Fevral","Mart","Aprel","May","Iyun","Iyul","Avgust","Sentabr","Oktabr","Noyabr","Dekabr"];
+const MON_SHORT = ["yan","fev","mar","apr","may","iyn","iyl","avg","sen","okt","noy","dek"];
+const DOW_MIN = ["Du","Se","Ch","Pa","Ju","Sh","Ya"];
+const AV_COLORS = ["#000000"];
+const PROJECT_TONES = ["#F6E921"];
+
+/* ==================== Holat ==================== */
+let boardData = null, metaData = null;
 let currentNav = "home";
-let selectedDate = null;   // Home'da tanlangan kun (Date)
-let currentStatus = null;  // Vazifalar tab'ida tanlangan status
+let currentStatus = null, currentAgencyTab = "about";
+let dateFilter = null;          // tanlangan kun (Date) yoki null
+let homeStatusFilter = "all";  // Home: Notion statusiga asoslangan filtr
+let designerDateOffset = 0;
+let calOpen = false;
+let monthCursor = null;
+let overlayStack = [];
 
-function escapeHtml(str) {
-  const div = document.createElement("div");
-  div.textContent = str == null ? "" : str;
-  return div.innerHTML;
+const $ = (id) => document.getElementById(id);
+const appEl = $("app"), viewEl = $("view");
+
+/* ==================== Yordamchilar ==================== */
+function escapeHtml(s) { const d = document.createElement("div"); d.textContent = s == null ? "" : s; return d.innerHTML; }
+function ymd(d) { return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0"); }
+function todayMidnight() { const n = new Date(); return new Date(n.getFullYear(), n.getMonth(), n.getDate()); }
+function parseDate(s) { if (!s) return null; const d = new Date(s); return isNaN(d) ? null : new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
+function daysBetween(a, b) { return Math.round((b - a) / 86400000); }
+function deadlineLabel(dl, today) {
+  const n = daysBetween(today, dl);
+  if (n === 0) return "Bugun";
+  if (n === 1) return "Ertaga";
+  if (n === -1) return "Kecha kechikdi";
+  if (n < -1) return Math.abs(n) + " kun kechikdi";
+  if (n <= 6) return n + " kundan keyin";
+  return dl.getDate() + " " + MON_SHORT[dl.getMonth()];
 }
-function ymd(d) {
-  return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
+function fullDate(d) { return d.getDate() + " " + MONTHS[d.getMonth()].toLowerCase(); }
+function isActive(t) { return !DONE_STATUSES.includes(t.status); }
+function statusStyle(status) {
+  const option = boardData?.statusOptions?.find((x) => x.name === status);
+  return NOTION_COLORS[option?.color || "default"] || NOTION_COLORS.default;
 }
-function todayMidnight() {
-  const n = new Date();
-  return new Date(n.getFullYear(), n.getMonth(), n.getDate());
+function statusColor(status) { return statusStyle(status).dot; }
+function statusChipHtml(status) {
+  const style = statusStyle(status);
+  return `<span class="st-chip" style="--sc:${style.dot};--sb:${style.bg};--si:${style.ink}"><i></i>${escapeHtml(status)}</span>`;
 }
-function parseDeadline(dateStr) {
-  if (!dateStr) return null;
-  const d = new Date(dateStr);
-  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+function prioOf(t) { return t.prioritet ? PRIO[t.prioritet] : null; }
+function initials(n) {
+  const p = String(n || "").trim().split(/\s+/).filter(Boolean);
+  if (!p.length) return "?";
+  return (p.length === 1 ? p[0].slice(0,2) : p[0][0] + p[1][0]).toUpperCase();
+}
+function personColor(name) {
+  let h = 0; const s = String(name);
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  return AV_COLORS[h % AV_COLORS.length];
+}
+function projectTone(name) {
+  let h = 0; const s = String(name || "Creative Dprt");
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  return PROJECT_TONES[h % PROJECT_TONES.length];
+}
+function greeting() {
+  const h = new Date().getHours();
+  return h < 6 ? "Xayrli tun" : h < 12 ? "Xayrli tong" : h < 18 ? "Xayrli kun" : "Xayrli kech";
+}
+function isManager() { return !!boardData?.requester?.isManager; }
+
+// Ushbu rol uchun "navbat menda" hisoblanadigan bosqichlar
+function courtStatuses() {
+  const all = boardData.statusOrder || [];
+  const want = isManager() ? COURT_MANAGER : COURT_DESIGNER;
+  const hit = want.filter((s) => all.includes(s));
+  return hit.length ? hit : all.filter((s) => !DONE_STATUSES.includes(s));
+}
+function inMyCourt(t) { return courtStatuses().includes(t.status); }
+
+// Kechikkanlar oldinda, keyin muddat bo'yicha, muddatsizlar oxirida
+function urgencySort(a, b) {
+  const today = todayMidnight();
+  const da = parseDate(a.dedlayn), db = parseDate(b.dedlayn);
+  const la = da && da < today, lb = db && db < today;
+  if (la !== lb) return la ? -1 : 1;
+  if (!da && !db) return (prioOf(a)?.rank ?? 3) - (prioOf(b)?.rank ?? 3);
+  if (!da) return 1;
+  if (!db) return -1;
+  if (+da !== +db) return da - db;
+  return (prioOf(a)?.rank ?? 3) - (prioOf(b)?.rank ?? 3);
 }
 
-function getTelegramUsername() {
-  const u = tg?.initDataUnsafe?.user?.username;
-  if (u) return u;
-  const params = new URLSearchParams(window.location.search);
-  return params.get("username") || "";
+let toastTimer = null;
+function toast(msg, isErr) {
+  const el = $("toast");
+  el.textContent = msg;
+  el.classList.toggle("err", !!isErr);
+  el.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove("show"), 2600);
 }
 
-// ---------- Ma'lumotni bir marta yuklash ----------
-async function loadData() {
-  const username = getTelegramUsername();
-  const viewEl = document.getElementById("view");
-  if (!username) {
-    viewEl.innerHTML = `<div class="state-msg error">Telegram foydalanuvchi nomi topilmadi. Botni Telegram ilovasi ichida oching.</div>`;
-    return;
+/* ==================== API ==================== */
+const qs = new URLSearchParams(location.search);
+const isDemo = qs.get("demo") === "1";
+const demoRole = qs.get("role") || "designer";
+const devUsername = qs.get("username") || "";
+
+function apiUrl(path) {
+  if (!devUsername) return path;
+  return path + (path.includes("?") ? "&" : "?") + "username=" + encodeURIComponent(devUsername);
+}
+
+async function api(path, opts) {
+  opts = opts || {};
+  if (isDemo) return demoApi(path, opts);
+
+  const headers = {};
+  if (tg?.initData) headers["x-telegram-init-data"] = tg.initData;
+  if (opts.body) headers["Content-Type"] = "application/json";
+
+  const resp = await fetch(apiUrl(path), {
+    method: opts.method || "GET",
+    headers,
+    body: opts.body ? JSON.stringify(opts.body) : undefined,
+  });
+  let data = {};
+  try { data = await resp.json(); } catch (e) {}
+  if (!resp.ok) { const e = new Error(data.error || "Xatolik yuz berdi"); e.status = resp.status; throw e; }
+  return data;
+}
+
+function loadScript(src) {
+  return new Promise((res, rej) => {
+    const s = document.createElement("script");
+    s.src = src; s.onload = res; s.onerror = rej;
+    document.head.appendChild(s);
+  });
+}
+
+async function demoApi(path, opts) {
+  if (!window.DEMO) await loadScript("/demo-data.js");
+  await new Promise((r) => setTimeout(r, 180)); // tarmoq kechikishini taqlid qilamiz
+  const D = window.DEMO;
+  if (path.startsWith("/api/board")) return D.board(demoRole);
+  if (path.startsWith("/api/meta")) return D.meta();
+  if (path.startsWith("/api/content/")) {
+    const resp = await fetch(path);
+    if (!resp.ok) throw new Error("Topilmadi");
+    return resp.json();
   }
-  viewEl.innerHTML = `<div class="state-msg"><div class="spinner"></div><span>Yuklanmoqda...</span></div>`;
+  const mStatus = path.match(/^\/api\/task\/([^/]+)\/status$/);
+  if (mStatus) return D.setStatus(mStatus[1], opts.body.status);
+  const mTask = path.match(/^\/api\/task\/([^/]+)$/);
+  if (mTask) { const r = D.task(mTask[1]); if (!r) throw new Error("Topilmadi"); return r; }
+  if (path === "/api/tasks" && opts.method === "POST") return D.create(opts.body);
+  throw new Error("Noma'lum so'rov");
+}
+
+/* ==================== Yuklash ==================== */
+function renderMe(name) {
+  // Brand headerda profil ko'rsatilmaydi.
+}
+
+function skeletonHtml() {
+  return `<div style="padding:6px var(--gut) 0"><div class="sk" style="height:150px;border-radius:18px"></div></div>
+    <div class="sec"><div class="sk" style="width:130px;height:12px"></div></div>
+    <div class="cards">${'<div class="sk sk-card"></div>'.repeat(3)}</div>`;
+}
+
+function errorView(title, text) {
+  setHeader("Creative Dprt", "Ma'lumot yuklanmadi");
+  return `<div class="empty error view-in">
+      <div class="glyph"><svg class="ico"><use href="#i-alert"/></svg></div>
+      <h3>${escapeHtml(title)}</h3><p>${escapeHtml(text || "")}</p>
+    </div>`;
+}
+
+async function loadData(silent) {
+  if (!silent) viewEl.innerHTML = skeletonHtml();
   try {
-    const resp = await fetch(`/api/board?username=${encodeURIComponent(username)}`);
-    const data = await resp.json();
-    if (!resp.ok) {
-      viewEl.innerHTML = `<div class="state-msg error">${escapeHtml(data.error || "Xatolik")}</div>`;
-      return;
-    }
-    boardData = data;
-    selectedDate = todayMidnight();
+    boardData = await api("/api/board");
+    renderMe(boardData.requester.name);
+    $("fab").classList.toggle("hidden", !isManager() || (currentNav !== "home" && currentNav !== "tasks"));
     renderNav();
   } catch (err) {
-    viewEl.innerHTML = `<div class="state-msg error">Ulanishda xatolik: ${escapeHtml(err.message)}</div>`;
+    if (err.status === 401) viewEl.innerHTML = errorView("Kirish tasdiqlanmadi", "Ilovani Telegram ichidagi tugma orqali oching.");
+    else if (err.status === 403) viewEl.innerHTML = errorView("Kirish yopiq", err.message);
+    else viewEl.innerHTML = errorView("Ulanib bo'lmadi", err.message || "Qayta urinib ko'ring.");
   }
 }
 
-// ---------- Navigatsiya ----------
-function setNav(nav) {
-  currentNav = nav;
-  document.querySelectorAll(".nav-item").forEach((b) => {
-    b.classList.toggle("active", b.dataset.nav === nav);
+/* ==================== Yangilash ==================== */
+let refreshing = false;
+async function refresh(fromPtr) {
+  if (refreshing) return;
+  refreshing = true;
+  const btn = $("refresh-btn");
+  btn.classList.add("busy");
+  haptic("light");
+  await loadData(true);
+  btn.classList.remove("busy");
+  refreshing = false;
+  if (fromPtr) haptic("medium");
+}
+$("refresh-btn").onclick = () => refresh(false);
+
+(function ptrSetup() {
+  const ptr = $("ptr");
+  let startY = 0, pulling = false, dist = 0;
+  appEl.addEventListener("touchstart", (e) => {
+    if (appEl.scrollTop <= 0 && !overlayStack.length) { startY = e.touches[0].clientY; pulling = true; dist = 0; }
+  }, { passive: true });
+  appEl.addEventListener("touchmove", (e) => {
+    if (!pulling) return;
+    dist = e.touches[0].clientY - startY;
+    if (dist <= 0) { ptr.style.height = "0px"; return; }
+    const h = Math.min(dist * 0.45, 74);
+    ptr.style.height = h + "px";
+    const r = ptr.querySelector(".ring");
+    r.style.opacity = Math.min(h / 34, 1);
+    r.style.transform = `rotate(${h * 6}deg)`;
+  }, { passive: true });
+  appEl.addEventListener("touchend", async () => {
+    if (!pulling) return;
+    pulling = false;
+    if (dist >= 66) { ptr.classList.add("spin"); ptr.style.height = "44px"; await refresh(true); ptr.classList.remove("spin"); }
+    ptr.style.height = "0px";
+    ptr.querySelector(".ring").style.transform = "";
   });
+})();
+
+appEl.addEventListener("scroll", () => { $("topbar").classList.toggle("stuck", appEl.scrollTop > 4); }, { passive: true });
+
+/* ==================== Navigatsiya ==================== */
+function setNav(nav) {
+  // Dizayner uchun ikkinchi ikonka kanban emas, tezkor yordam sahifasiga olib boradi.
+  if (!isManager() && nav === "tasks") nav = "guides";
+  if (nav === currentNav) { appEl.scrollTo({ top: 0, behavior: "smooth" }); return; }
+  currentNav = nav;
+  hapticSelect();
+  document.querySelectorAll(".nav-item").forEach((b) => b.classList.toggle("active", b.dataset.nav === nav));
+  appEl.scrollTop = 0;
   renderNav();
 }
 function renderNav() {
+  document.body.classList.toggle("designer-mode", !isManager());
+  document.body.classList.toggle("manager-mode", isManager());
+  $("cal-toggle").classList.toggle("hidden", currentNav !== "home" || !isManager());
+  $("fab").classList.toggle("hidden", !isManager() || (currentNav !== "home" && currentNav !== "tasks"));
+  if (!boardData && currentNav !== "agency" && currentNav !== "guides") return;
   if (currentNav === "home") renderHome();
   else if (currentNav === "tasks") renderTasks();
   else if (currentNav === "agency") renderAgency();
   else if (currentNav === "guides") renderGuides();
 }
+function setHeader(title, subHtml) {
+  $("header-title").textContent = title;
+  $("header-subtitle").innerHTML = subHtml;
+}
 
-// ---------- HOME ----------
-function renderHome() {
-  document.getElementById("header-title").textContent = `Salom, ${boardData.requester.name}`;
-  document.getElementById("header-subtitle").textContent = boardData.requester.isManager
-    ? "Barcha dizaynerlar" : "Bugungi ishlaringiz";
+$("cal-toggle").onclick = () => {
+  calOpen = !calOpen;
+  if (calOpen && !monthCursor) monthCursor = new Date((dateFilter || todayMidnight()).getFullYear(), (dateFilter || todayMidnight()).getMonth(), 1);
+  hapticSelect();
+  renderHome();
+};
 
+/* ==================== HOME ==================== */
+function renderDesignerHome() {
   const today = todayMidnight();
-
-  // Kalendar: bugundan boshlab 21 kun
-  let calHtml = `<div class="cal-strip" id="cal-strip">`;
-  for (let i = 0; i < 21; i++) {
-    const d = new Date(today);
-    d.setDate(today.getDate() + i);
-    const isActive = ymd(d) === ymd(selectedDate);
-    const isToday = ymd(d) === ymd(today);
-    // shu kunда dedlayni bor ish bormi?
-    const hasTask = boardData.tasks.some((t) => {
-      const dl = parseDeadline(t.dedlayn);
-      return dl && ymd(dl) === ymd(d) && !DONE_STATUSES.includes(t.status);
-    });
-    calHtml += `
-      <div class="cal-day ${isActive ? "active" : ""} ${isToday ? "today" : ""}" data-date="${ymd(d)}">
-        <span class="dow">${DOW[d.getDay()]}</span>
-        <span class="dnum">${d.getDate()}</span>
-        <span class="cal-dot ${hasTask ? "" : "hidden"}"></span>
-      </div>`;
-  }
-  calHtml += `</div>`;
-
-  // Kechikayotgan ishlar (dedlayni bugundan oldin, tugamagan)
-  const overdue = boardData.tasks.filter((t) => {
-    const dl = parseDeadline(t.dedlayn);
-    return dl && dl < today && !DONE_STATUSES.includes(t.status);
-  }).sort((a, b) => parseDeadline(a.dedlayn) - parseDeadline(b.dedlayn));
-
-  // Tanlangan kun ishlari (dedlayni aynan o'sha kun, tugamagan)
-  const dayTasks = boardData.tasks.filter((t) => {
-    const dl = parseDeadline(t.dedlayn);
-    return dl && ymd(dl) === ymd(selectedDate) && !DONE_STATUSES.includes(t.status);
+  const me = boardData.requester?.id;
+  // Dizayner uchun "mening" degani: unga biriktirilgan barcha faol tasklar.
+  const mine = boardData.tasks.filter((t) => isActive(t) && t.designers.some((d) => d.id === me)).sort(urgencySort);
+  const overdue = mine.filter((t) => { const d = parseDate(t.dedlayn); return d && d < today; });
+  const rush = mine.filter((t) => overdue.includes(t) || ["urgent", "high"].includes(prioOf(t)?.key)).slice(0, 6);
+  const selectedDate = new Date(today);
+  selectedDate.setDate(today.getDate() + designerDateOffset);
+  const visibleTasks = mine.filter((t) => {
+    const d = parseDate(t.dedlayn);
+    return d && ymd(d) === ymd(selectedDate) && !rush.includes(t);
   });
 
-  const isToday = ymd(selectedDate) === ymd(today);
-  const dayLabel = isToday ? "Bugun" : selectedDate.toLocaleDateString("uz-UZ", { day: "numeric", month: "long" });
+  setHeader("Creative Dprt", "");
+  let html = `<section class="my-tasks"><h2>Mening<br>topshiriqlarim</h2>`;
+  html += rush.length ? `<section class="task-group rush"><div class="task-group-head"><svg class="ico"><use href="#i-alert"/></svg>Tezroq kerak<span class="count">${rush.length}</span></div><div class="quick-strip">${rush.map((t) => quickTaskHtml(t, today)).join("")}</div></section>` : "";
+  html += designerDateStripHtml(today);
+  html += `<h3 class="today-heading">${designerDateOffset === 0 ? "Bugungi topshiriqlar" : escapeHtml(fullDate(selectedDate) + " topshiriqlari")}</h3>`;
+  html += `<div class="planner-list">${visibleTasks.length ? visibleTasks.map((t) => designerTaskHtml(t, today)).join("") : `<div class="planner-empty">Bu kun uchun topshiriq yo‘q.</div>`}</div>`;
+  if (!mine.length) html += `<div class="designer-empty">Hozir sizga biriktirilgan faol topshiriq yo‘q.</div>`;
+  html += `</section>`;
 
-  let html = calHtml;
-
-  // Kechikayotganlar faqat bugun tanlanganda ko'rsatiladi (chalkashmaslik uchun)
-  if (isToday && overdue.length > 0) {
-    html += `<div class="section-label overdue-label">Kechikayotgan ishlar <span class="badge">${overdue.length}</span></div>`;
-    html += `<div class="cards-wrap">` + overdue.map((t) => taskCardHtml(t, true)).join("") + `</div>`;
-  }
-
-  html += `<div class="section-label">${escapeHtml(dayLabel)} ishlari <span class="badge">${dayTasks.length}</span></div>`;
-  if (dayTasks.length > 0) {
-    html += `<div class="cards-wrap">` + dayTasks.map((t) => taskCardHtml(t, false)).join("") + `</div>`;
-  } else {
-    html += `<div class="state-msg">Bu kunда dedlayni bor ish yo'q</div>`;
-  }
-
-  document.getElementById("view").innerHTML = html;
-
-  // Kalendar kunlarини bosish
-  document.querySelectorAll(".cal-day").forEach((el) => {
+  viewEl.innerHTML = `<div class="view-in">${html}</div>`;
+  viewEl.querySelectorAll("[data-designer-task]").forEach((el) => {
+    el.onclick = () => openDetail(el.dataset.designerTask);
+  });
+  viewEl.querySelectorAll("[data-complete]").forEach((el) => {
+    el.onclick = (event) => { event.stopPropagation(); completeTask(el.dataset.complete); };
+  });
+  viewEl.querySelectorAll("[data-day-offset]").forEach((el) => {
+    el.onclick = () => { designerDateOffset = Number(el.dataset.dayOffset); hapticSelect(); renderDesignerHome(); };
+  });
+  viewEl.querySelectorAll("[data-toggle-group]").forEach((el) => {
     el.onclick = () => {
-      const [y, m, dd] = el.dataset.date.split("-").map(Number);
-      selectedDate = new Date(y, m - 1, dd);
-      renderHome();
+      const group = $(el.dataset.toggleGroup);
+      const collapsed = group.classList.toggle("collapsed");
+      el.setAttribute("aria-expanded", String(!collapsed));
+      hapticSelect();
     };
   });
 }
 
-// Vazifa kartochkasi (showStatus: kechikayotganlar uchun status ko'rsatiladi)
-function taskCardHtml(task, showStatus) {
-  const meta = STATUS_META[task.status] || { color: "var(--border)" };
-  const dl = parseDeadline(task.dedlayn);
-  const today = todayMidnight();
-  const isOverdue = dl && dl < today;
-  const prioMeta = task.prioritet ? PRIO_META[task.prioritet] : null;
-
-  let dlText = "";
-  if (dl) {
-    dlText = dl.toLocaleDateString("uz-UZ", { day: "numeric", month: "short" });
-  }
-
-  const parts = [];
-  if (showStatus) {
-    parts.push(`<span class="status-pill">${escapeHtml(task.status)}</span>`);
-  }
-  if (task.projectName) parts.push(`<span class="item">📁 ${escapeHtml(task.projectName)}</span>`);
-  if (dlText) parts.push(`<span class="item deadline ${isOverdue ? "overdue" : ""}">📅 ${dlText}</span>`);
-  if (boardData.requester.isManager && task.designers.length) {
-    parts.push(`<span class="item">👤 ${task.designers.map((d) => escapeHtml(d.name)).join(", ")}</span>`);
-  }
-
-  return `<a class="card" href="${escapeHtml(task.url)}" target="_blank" style="--status-color:${meta.color}">
-    <div class="card-top">
-      <div class="card-title">${escapeHtml(task.name)}</div>
-      ${task.prioritet ? `<div class="prio" style="color:${prioMeta.color};background:${prioMeta.bg}">${escapeHtml(task.prioritet)}</div>` : ""}
-    </div>
-    <div class="card-meta">${parts.join("")}</div>
-  </a>`;
+function designerDateStripHtml(today) {
+  const labels = ["Yak", "Dush", "Sesh", "Chor", "Pay", "Jum", "Shan"];
+  return `<div class="date-strip">${[-2, -1, 0, 1, 2].map((offset) => {
+    const date = new Date(today);
+    date.setDate(today.getDate() + offset);
+    return `<button class="date-chip${designerDateOffset === offset ? " on" : ""}" data-day-offset="${offset}"><span>${labels[date.getDay()]}</span><b>${date.getDate()}</b></button>`;
+  }).join("")}</div>`;
 }
 
-// ---------- VAZIFALAR (Kanban) ----------
-function renderTasks() {
-  document.getElementById("header-title").textContent = "Vazifalar";
-  document.getElementById("header-subtitle").textContent = boardData.requester.isManager
-    ? "Barcha dizaynerlar" : "Sizning vazifalaringiz";
+function quickTaskHtml(t, today) {
+  const dl = parseDate(t.dedlayn);
+  const progress = STATUS_PROGRESS[t.status] ?? 10;
+  return `<button class="quick-task" data-designer-task="${escapeHtml(t.id)}">
+      <span class="quick-status"><i></i>${escapeHtml(t.status)}</span>
+      <div class="quick-name">${escapeHtml(t.name)}</div>
+      <div class="quick-project"><svg class="ico"><use href="#i-folder-fill"/></svg>${escapeHtml(t.projectName || "Loyiha tanlanmagan")}</div>
+      <div class="quick-meta">${escapeHtml(deadlineLabel(dl, today))}</div>
+      <div class="quick-progress"><span class="quick-progress-track"><span class="quick-progress-fill" style="width:${progress}%"></span></span><span class="quick-progress-value">${progress}%</span></div>
+    </button>`;
+}
 
-  const statusesWithData = boardData.statusOrder.filter((s) => boardData.board[s]?.length > 0);
-  const toShow = statusesWithData.length ? statusesWithData : boardData.statusOrder;
-  if (!currentStatus || !toShow.includes(currentStatus)) currentStatus = toShow[0];
+function designerGroupHtml(title, icon, tasks, today, kind) {
+  if (!tasks.length) return "";
+  const id = `designer-group-${kind}`;
+  const toggle = kind === "upcoming" ? `<button class="group-toggle" data-toggle-group="${id}" aria-label="Keyingi topshiriqlarni yig'ish" aria-expanded="true"><svg class="ico"><use href="#i-down"/></svg></button>` : "";
+  return `<section class="task-group ${kind}" id="${id}">
+      <div class="task-group-head"><svg class="ico"><use href="#${icon}"/></svg>${title}<span class="count">${tasks.length}</span>${toggle}</div>
+      <div class="designer-list">${tasks.map((t) => designerTaskHtml(t, today)).join("")}</div>
+    </section>`;
+}
 
-  let html = `<div id="tabs">`;
-  for (const s of toShow) {
-    const meta = STATUS_META[s] || { label: s, color: "var(--border)" };
-    const count = boardData.board[s]?.length || 0;
-    html += `<div class="tab ${s === currentStatus ? "active" : ""}" style="color:${meta.color}" data-status="${escapeHtml(s)}">
-      <span class="dot" style="background:${meta.color}"></span>${escapeHtml(meta.label)}<span class="count">${count}</span>
+function designerTaskHtml(t, today) {
+  const dl = parseDate(t.dedlayn);
+  const late = dl && dl < today;
+  const p = prioOf(t);
+  const deadline = dl ? `<span class="designer-chip ${late ? "late" : ""}"><svg class="ico"><use href="#i-cal-fill"/></svg>${escapeHtml(deadlineLabel(dl, today))}</span>` : "";
+  const priority = p && p.key !== "normal" ? `<span class="designer-chip p-${p.key}"><svg class="ico"><use href="#i-flag"/></svg>${escapeHtml(p.label)}</span>` : "";
+  const project = t.projectName ? `<span class="designer-chip"><svg class="ico"><use href="#i-folder-fill"/></svg>${escapeHtml(t.projectName)}</span>` : "";
+  return `<div class="designer-task">
+      <button class="task-check" data-complete="${escapeHtml(t.id)}" aria-label="${escapeHtml(t.name)} tugallandi deb belgilash"><svg class="ico"><use href="#i-tick"/></svg></button>
+      <button class="designer-task-main" data-designer-task="${escapeHtml(t.id)}">
+        <div class="designer-task-name">${escapeHtml(t.name)}</div>
+        <div class="designer-task-meta">${deadline}${priority}${project}</div>
+      </button>
     </div>`;
+}
+
+async function completeTask(id) {
+  const task = boardData.tasks.find((t) => t.id === id);
+  const doneStatus = boardData.statusOrder.find((s) => s === "Finish") || "Finish";
+  if (!task) return;
+  const previous = task.status;
+  task.status = doneStatus;
+  rebuildBoard(); renderDesignerHome();
+  try {
+    await api(`/api/task/${encodeURIComponent(id)}/status`, { method: "PATCH", body: { status: doneStatus } });
+    hapticNotify("success"); toast("Topshiriq tugallandi");
+  } catch (err) {
+    task.status = previous;
+    rebuildBoard(); renderDesignerHome();
+    hapticNotify("error"); toast(err.message || "O'zgartirib bo'lmadi", true);
   }
-  html += `</div><div id="task-cards"></div>`;
-  document.getElementById("view").innerHTML = html;
+}
 
-  document.querySelectorAll(".tab").forEach((el) => {
-    el.onclick = () => { currentStatus = el.dataset.status; renderTasks(); };
+function renderManagerHome() {
+  const today = todayMidnight();
+  const active = boardData.tasks.filter(isActive).sort(urgencySort);
+  const reviewQueue = active.filter(inMyCourt).slice(0, 8);
+  const selectedDate = new Date(today);
+  selectedDate.setDate(today.getDate() + designerDateOffset);
+  const dayTasks = active.filter((t) => {
+    const date = parseDate(t.dedlayn);
+    return date && ymd(date) === ymd(selectedDate);
   });
-  renderTaskCards();
-}
-function renderTaskCards() {
-  const el = document.getElementById("task-cards");
-  const tasks = boardData.board[currentStatus] || [];
-  if (!tasks.length) { el.innerHTML = `<div class="state-msg">Bu bosqichda vazifalar yo'q</div>`; return; }
-  el.innerHTML = `<div class="cards-wrap">` + tasks.map((t) => taskCardHtml(t, false)).join("") + `</div>`;
+
+  setHeader("Creative Dprt", "");
+  let html = `<section class="my-tasks"><h2>Jamoa<br>topshiriqlari</h2>`;
+  if (reviewQueue.length) {
+    html += `<section class="task-group rush"><div class="task-group-head">Tekshiruv kerak</div><div class="quick-strip">${reviewQueue.map((t) => managerFocusHtml(t, today)).join("")}</div></section>`;
+  }
+  html += designerDateStripHtml(today);
+  html += `<h3 class="today-heading">${designerDateOffset === 0 ? "Bugungi topshiriqlar" : escapeHtml(fullDate(selectedDate) + " topshiriqlari")}</h3>`;
+  html += `<div class="planner-list">${dayTasks.length ? dayTasks.map((t) => managerTaskHtml(t, today)).join("") : `<div class="planner-empty">Bu kun uchun jamoa topshirig‘i yo‘q.</div>`}</div></section>`;
+
+  viewEl.innerHTML = `<div class="view-in">${html}</div>`;
+  viewEl.querySelectorAll("[data-manager-task]").forEach((el) => {
+    el.onclick = () => openDetail(el.dataset.managerTask);
+  });
+  viewEl.querySelectorAll("[data-day-offset]").forEach((el) => {
+    el.onclick = () => { designerDateOffset = Number(el.dataset.dayOffset); hapticSelect(); renderManagerHome(); };
+  });
 }
 
-// ---------- AGENTLIK (ichki tab'lar) ----------
+function managerFocusHtml(t, today) {
+  const deadline = parseDate(t.dedlayn);
+  const progress = STATUS_PROGRESS[t.status] ?? 10;
+  const designer = t.designers.map((d) => d.name).join(", ") || "Dizayner biriktirilmagan";
+  return `<button class="quick-task manager-focus" data-manager-task="${escapeHtml(t.id)}">
+      <span class="quick-status"><i></i>${escapeHtml(t.status)}</span>
+      <div class="quick-name">${escapeHtml(t.name)}</div>
+      <div class="quick-project"><svg class="ico"><use href="#i-folder-fill"/></svg>${escapeHtml(t.projectName || "Loyiha tanlanmagan")}</div>
+      <div class="manager-assignee"><svg class="ico"><use href="#i-user-fill"/></svg>${escapeHtml(designer)}</div>
+      <div class="quick-meta">${deadline ? escapeHtml(deadlineLabel(deadline, today)) : "Muddat belgilanmagan"}</div>
+      <div class="quick-progress"><span class="quick-progress-track"><span class="quick-progress-fill" style="width:${progress}%"></span></span><span class="quick-progress-value">${progress}%</span></div>
+    </button>`;
+}
+
+function managerTaskHtml(t, today) {
+  const deadline = parseDate(t.dedlayn);
+  const style = statusStyle(t.status);
+  const designer = t.designers.map((d) => d.name).join(", ") || "Dizayner yo‘q";
+  return `<div class="designer-task">
+      <button class="manager-task-main" data-manager-task="${escapeHtml(t.id)}">
+        <div class="manager-task-top"><div class="designer-task-name">${escapeHtml(t.name)}</div><span class="manager-task-status" style="background:${style.bg};color:${style.ink}">${escapeHtml(t.status)}</span></div>
+        <div class="designer-task-meta">
+          ${deadline ? `<span class="designer-chip"><svg class="ico"><use href="#i-cal-fill"/></svg>${escapeHtml(deadlineLabel(deadline, today))}</span>` : ""}
+          ${t.projectName ? `<span class="designer-chip"><svg class="ico"><use href="#i-folder-fill"/></svg>${escapeHtml(t.projectName)}</span>` : ""}
+          <span class="designer-chip"><svg class="ico"><use href="#i-user-fill"/></svg>${escapeHtml(designer)}</span>
+        </div>
+      </button>
+    </div>`;
+}
+
+function renderHome() {
+  if (!isManager()) { renderDesignerHome(); return; }
+  renderManagerHome(); return;
+  const today = todayMidnight();
+  const active = boardData.tasks.filter(isActive);
+  const mine = active.filter(inMyCourt).sort(urgencySort);
+  const waiting = active.filter((t) => !inMyCourt(t)).sort(urgencySort);
+  const lateMine = mine.filter((t) => { const d = parseDate(t.dedlayn); return d && d < today; });
+
+  // Header faqat kontekst beradi; asosiy ekran nomi pastda katta ko'rinadi.
+  let sub;
+  if (dateFilter) {
+    sub = `${escapeHtml(fullDate(dateFilter))} kuni bo'yicha filtr`;
+  } else if (!mine.length) {
+    sub = isManager() ? "Tekshiruvda ish yo'q — jamoa ishlayapti" : "Navbatingizda ish yo'q";
+  } else {
+    const what = isManager() ? "tekshiruvda" : "ish sizda";
+    sub = `<b>${mine.length}</b> ta ${what}`
+      + (lateMine.length ? ` · <span class="hot">${lateMine.length} kechikkan</span>` : "");
+  }
+  setHeader("Creative Dprt", sub);
+
+  $("cal-toggle").classList.toggle("on", calOpen || !!dateFilter);
+
+  let html = `<section class="home-intro">
+      <h2>Vazifalar</h2>
+      <p>${isManager() ? "Jamoa oqimi va tekshiruv navbati" : "Bugun yakunlashingiz kerak bo'lgan ishlar"}</p>
+    </section>`;
+
+  // Kalendar - yopiq turadi, fokusga halal bermaydi
+  if (calOpen) {
+    const byDay = {};
+    active.forEach((t) => { const d = parseDate(t.dedlayn); if (d) (byDay[ymd(d)] = byDay[ymd(d)] || []).push(t); });
+    html += `<div class="cal-panel view-in">
+        <div class="cal-head">
+          <button class="mini-btn" id="m-prev"><svg class="ico ico-sm"><use href="#i-left"/></svg></button>
+          <span class="month">${MONTHS[monthCursor.getMonth()]} ${monthCursor.getFullYear()}</span>
+          <button class="mini-btn" id="m-next"><svg class="ico ico-sm"><use href="#i-right"/></svg></button>
+        </div>
+        ${monthGridHtml(byDay, today)}
+      </div>`;
+  }
+
+  if (dateFilter) {
+    html += `<div class="filter-bar">
+        <button class="fchip" id="clear-filter">
+          <svg class="ico ico-sm"><use href="#i-cal"/></svg>${escapeHtml(fullDate(dateFilter))}
+          <span class="x"><svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span>
+        </button>
+      </div>`;
+
+    const dayTasks = active.filter((t) => { const d = parseDate(t.dedlayn); return d && ymd(d) === ymd(dateFilter); }).sort(urgencySort);
+    html += `<div class="sec">Shu kundagi ishlar <span class="badge">${dayTasks.length}</span></div>`;
+    html += dayTasks.length
+      ? `<div class="cards">${dayTasks.map(cardHtml).join("")}</div>`
+      : emptyHtml("i-check", "Bo'sh kun", "Bu kunga muddat belgilangan ish yo'q.", true);
+
+    viewEl.innerHTML = `<div class="view-in">${html}</div>`;
+    bindHome();
+    return;
+  }
+
+  // Diqqat kerak: avval kechikkanlar, keyin bugungi deadline. Bir nechta bo'lsa surib ko'riladi.
+  const spotlight = mine.filter((t) => {
+    const d = parseDate(t.dedlayn);
+    return d && d <= today;
+  }).slice(0, 8);
+  if (spotlight.length) {
+    html += `<div class="focus-strip">${spotlight.map((t) => focusCardHtml(t, today)).join("")}</div>`;
+  }
+
+  // Filtrlar Notion'dagi mavjud statuslardan tuziladi.
+  const statuses = boardData.statusOrder.filter((status) => mine.some((t) => t.status === status));
+  const tabs = [["all", "Hammasi"], ...statuses.map((status) => [status, status])];
+  html += `<div class="tasks-title">Topshiriqlar</div>`;
+  html += `<div class="time-tabs">${tabs.map(([key, label]) =>
+    `<button class="time-tab${homeStatusFilter === key ? " on" : ""}" data-home-status="${escapeHtml(key)}">${escapeHtml(label)}</button>`).join("")}</div>`;
+
+  const matchesStatus = mine.filter((t) => homeStatusFilter === "all" || t.status === homeStatusFilter);
+  // “Hammasi”da fokus kartasi takrorlanmaydi; aniq status filtrida esa u topilishi mumkin.
+  const listTasks = homeStatusFilter === "all" ? matchesStatus.filter((t) => !spotlight.includes(t)) : matchesStatus;
+  if (listTasks.length) html += `<div class="cards">${listTasks.map(cardHtml).join("")}</div>`;
+  else if (!spotlight.length || homeStatusFilter !== "all") html += emptyHtml("i-check", "Bu bo'limda ish yo'q", "Boshqa statusni tanlab ko'ring.", true);
+
+  // --- Kutilmoqda (boshqada turgan ishlar) ---
+  if (waiting.length) {
+    const wLabel = isManager() ? "Jamoada" : "Kutilmoqda";
+    const wHint = isManager() ? "dizaynerlarda va mijozda" : "sizdan chiqib ketgan";
+    html += `<div class="sec">${wLabel} <span class="badge">${waiting.length}</span><span class="hint">${wHint}</span></div>
+      <div class="cards muted">${waiting.map(cardHtml).join("")}</div>`;
+  }
+
+  viewEl.innerHTML = `<div class="view-in">${html}</div>`;
+  bindHome();
+}
+
+function emptyHtml(icon, title, text, ok) {
+  return `<div class="empty ${ok ? "ok" : ""}">
+      <div class="glyph"><svg class="ico"><use href="#${icon}"/></svg></div>
+      <h3>${escapeHtml(title)}</h3><p>${escapeHtml(text)}</p>
+    </div>`;
+}
+
+function taskMatchesTime(t, filter, today) {
+  if (filter === "all") return true;
+  const d = parseDate(t.dedlayn);
+  if (!d) return false;
+  const delta = daysBetween(today, d);
+  if (filter === "today") return delta === 0;
+  if (filter === "tomorrow") return delta === 1;
+  return delta >= 0 && delta <= 7;
+}
+
+function focusCardHtml(t, today) {
+  const dl = parseDate(t.dedlayn);
+  const style = statusStyle(t.status);
+  const designer = t.designers.length ? t.designers.map((d) => d.name).join(", ") : "Dizayner biriktirilmagan";
+  return `<button class="focus-card" data-task="${escapeHtml(t.id)}" style="--fc:${style.bg};--fc-ink:${style.ink};--sc:${style.dot}">
+      <div class="focus-top">
+        <span class="focus-state"><i></i>${escapeHtml(t.status)}</span>
+      </div>
+      <div class="focus-title">${escapeHtml(t.name)}</div>
+      <div class="focus-folder"><svg class="ico ico-sm"><use href="#i-folder"/></svg>${escapeHtml(t.projectName || "Loyiha tanlanmagan")}</div>
+      <div class="focus-owner"><svg class="ico ico-sm"><use href="#i-user"/></svg>${escapeHtml(designer)}</div>
+      <div class="focus-bottom"><span>${escapeHtml(deadlineLabel(dl, today))}</span><svg class="ico ico-sm"><use href="#i-right"/></svg></div>
+    </button>`;
+}
+
+function monthGridHtml(byDay, today) {
+  const y = monthCursor.getFullYear(), m = monthCursor.getMonth();
+  const first = new Date(y, m, 1);
+  const start = new Date(y, m, 1 - ((first.getDay() + 6) % 7));
+  const lastRow = new Date(start); lastRow.setDate(start.getDate() + 35);
+  const total = lastRow.getMonth() === m ? 42 : 35;
+
+  let cells = DOW_MIN.map((d) => `<div class="mdow">${d}</div>`).join("");
+  for (let i = 0; i < total; i++) {
+    const d = new Date(start); d.setDate(start.getDate() + i);
+    const key = ymd(d);
+    const items = byDay[key] || [];
+    const cls = ["mday",
+      d.getMonth() !== m ? "out" : "",
+      items.length ? (d < today ? "late" : "has") : "",
+      key === ymd(today) ? "today" : "",
+      dateFilter && key === ymd(dateFilter) ? "sel" : "",
+    ].filter(Boolean).join(" ");
+    cells += `<button class="${cls}" data-date="${key}"><span>${d.getDate()}</span><span class="mdot"></span></button>`;
+  }
+  return `<div class="mgrid">${cells}</div>`;
+}
+
+function bindHome() {
+  viewEl.querySelectorAll("[data-task]").forEach((el) => { el.onclick = () => openDetail(el.dataset.task); });
+  viewEl.querySelectorAll("[data-date]").forEach((el) => {
+    el.onclick = () => {
+      const [y, m, d] = el.dataset.date.split("-").map(Number);
+      const picked = new Date(y, m - 1, d);
+      dateFilter = dateFilter && ymd(dateFilter) === ymd(picked) ? null : picked;
+      monthCursor = new Date(y, m - 1, 1);
+      hapticSelect(); renderHome();
+    };
+  });
+  const cf = $("clear-filter");
+  if (cf) cf.onclick = () => { dateFilter = null; hapticSelect(); renderHome(); };
+  viewEl.querySelectorAll("[data-home-status]").forEach((el) => {
+    el.onclick = () => { homeStatusFilter = el.dataset.homeStatus; hapticSelect(); renderHome(); };
+  });
+  const mp = $("m-prev"), mn = $("m-next");
+  if (mp) mp.onclick = () => { monthCursor = new Date(monthCursor.getFullYear(), monthCursor.getMonth() - 1, 1); hapticSelect(); renderHome(); };
+  if (mn) mn.onclick = () => { monthCursor = new Date(monthCursor.getFullYear(), monthCursor.getMonth() + 1, 1); hapticSelect(); renderHome(); };
+}
+
+/* ==================== Kartochka ====================
+   Tartib: nom -> loyiha -> dedlayn -> holat -> (dizaynerlar)
+   Rang faqat prioritet baland bo'lganda; prioritet bayroqcha bilan. */
+function cardHtml(t) {
+  const today = todayMidnight();
+  const dl = parseDate(t.dedlayn);
+  const late = dl && dl < today;
+  const p = prioOf(t);
+  const pKey = p ? p.key : "none";
+
+  const row = [];
+  if (dl) row.push(`<span class="m ${late ? "late" : ""}"><svg class="ico ico-sm"><use href="#i-cal"/></svg>${escapeHtml(deadlineLabel(dl, today))}</span>`);
+  if (p) row.push(`<span class="m p-${pKey}"><svg class="ico ico-sm"><use href="#i-flag"/></svg>${escapeHtml(p.label)}</span>`);
+
+  let people = "";
+  if (isManager() && t.designers.length) {
+    const shown = t.designers.slice(0, 2).map((d) =>
+      `<span class="person"><i style="background:${personColor(d.name)}"></i>${escapeHtml(d.name)}</span>`).join("");
+    const more = t.designers.length > 2 ? `<span class="person more">+${t.designers.length - 2}</span>` : "";
+    people = `<span class="people">${shown}${more}</span>`;
+  }
+
+  return `<button class="card" data-task="${escapeHtml(t.id)}" data-prio="${pKey}">
+      <div class="card-top">
+        <div class="card-title">${escapeHtml(t.name)}</div>
+        ${statusChipHtml(t.status)}
+      </div>
+      ${t.projectName ? `<div class="card-proj"><svg class="ico ico-sm"><use href="#i-folder"/></svg>${escapeHtml(t.projectName)}</div>` : ""}
+      <div class="card-row">${row.join("")}${people}</div>
+    </button>`;
+}
+
+/* ==================== VAZIFALAR ==================== */
+function renderTasks() {
+  setHeader("Vazifalar", isManager() ? "Barcha dizaynerlar" : "Sizning vazifalaringiz");
+
+  const withData = boardData.statusOrder.filter((s) => boardData.board[s]?.length);
+  const list = withData.length ? withData : boardData.statusOrder;
+  if (!currentStatus || !list.includes(currentStatus)) currentStatus = list[0];
+
+  const distro = list.map((s) => {
+    const n = boardData.board[s]?.length || 0;
+    return `<i class="${s === currentStatus ? "on" : ""}" style="flex:${n || 0.06};background:${statusColor(s)}"></i>`;
+  }).join("");
+
+  const segs = list.map((s) => {
+    const n = boardData.board[s]?.length || 0;
+    return `<button class="seg${s === currentStatus ? " active" : ""}" style="--sc:${statusColor(s)}" data-status="${escapeHtml(s)}">
+        <i></i>${escapeHtml(s)}<span class="count">${n}</span></button>`;
+  }).join("");
+
+  viewEl.innerHTML = `<div class="view-in">
+      <div class="distro">${distro}</div>
+      <div class="segs" id="segs">${segs}</div>
+      <div id="task-cards"></div>
+    </div>`;
+
+  viewEl.querySelectorAll(".seg").forEach((el) => {
+    el.onclick = () => { currentStatus = el.dataset.status; hapticSelect(); renderTasks(); };
+  });
+  const segsEl = $("segs"), act = segsEl.querySelector(".seg.active");
+  if (act) segsEl.scrollLeft = act.offsetLeft - segsEl.clientWidth / 2 + act.offsetWidth / 2;
+
+  const tasks = (boardData.board[currentStatus] || []).slice().sort(urgencySort);
+  const el = $("task-cards");
+  el.innerHTML = tasks.length
+    ? `<div class="cards view-in">${tasks.map(cardHtml).join("")}</div>`
+      + (list.length > 1 ? `<div class="swipe-hint">← bosqichlar orasida suring →</div>` : "")
+    : emptyHtml("i-inbox", "Bo'sh bosqich", `«${currentStatus}» bosqichida hozircha ish yo'q.`);
+
+  el.querySelectorAll("[data-task]").forEach((c) => { c.onclick = () => openDetail(c.dataset.task); });
+  bindStatusSwipe(list);
+}
+
+function bindStatusSwipe(list) {
+  let x0 = 0, y0 = 0, on = false;
+  const el = $("task-cards");
+  el.addEventListener("touchstart", (e) => { x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; on = true; }, { passive: true });
+  el.addEventListener("touchend", (e) => {
+    if (!on) return;
+    on = false;
+    const dx = e.changedTouches[0].clientX - x0, dy = e.changedTouches[0].clientY - y0;
+    if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.8) return;
+    const i = list.indexOf(currentStatus), n = dx < 0 ? i + 1 : i - 1;
+    if (n < 0 || n >= list.length) return;
+    currentStatus = list[n]; haptic("light"); renderTasks();
+  });
+}
+
+/* ==================== AGENTLIK / QO'LLANMA ==================== */
 const AGENCY_TABS = [
   { key: "about", label: "Agentlik haqida" },
   { key: "workflow", label: "Ish jarayonlari" },
   { key: "roles", label: "Kim nima qiladi" },
 ];
-let currentAgencyTab = "about";
-
 function renderAgency() {
-  document.getElementById("header-title").textContent = "Agentlik";
-  document.getElementById("header-subtitle").textContent = "Creative Dprt";
-
-  let html = `<div id="subtabs">`;
-  for (const t of AGENCY_TABS) {
-    html += `<div class="subtab ${t.key === currentAgencyTab ? "active" : ""}" data-key="${t.key}">${escapeHtml(t.label)}</div>`;
-  }
-  html += `</div><div id="agency-content"><div class="state-msg"><div class="spinner"></div></div></div>`;
-  document.getElementById("view").innerHTML = html;
-
-  document.querySelectorAll(".subtab").forEach((el) => {
-    el.onclick = () => { currentAgencyTab = el.dataset.key; renderAgency(); };
+  setHeader("Agentlik", "Creative Dprt");
+  const subs = AGENCY_TABS.map((t) =>
+    `<button class="subseg${t.key === currentAgencyTab ? " active" : ""}" data-key="${t.key}">${escapeHtml(t.label)}</button>`).join("");
+  viewEl.innerHTML = `<div class="view-in"><div class="subsegs">${subs}</div><div id="agency-content">${proseSkeleton()}</div></div>`;
+  viewEl.querySelectorAll(".subseg").forEach((el) => {
+    el.onclick = () => { currentAgencyTab = el.dataset.key; hapticSelect(); renderAgency(); };
   });
   loadContent(currentAgencyTab, "agency-content");
 }
-
-// ---------- QO'LLANMALAR ----------
 function renderGuides() {
-  document.getElementById("header-title").textContent = "Qo'llanmalar";
-  document.getElementById("header-subtitle").textContent = "Creative Dprt";
-  document.getElementById("view").innerHTML = `<div id="guides-content"><div class="state-msg"><div class="spinner"></div></div></div>`;
+  setHeader("Qo'llanmalar", "Creative Dprt");
+  viewEl.innerHTML = `<div class="view-in"><div id="guides-content">${proseSkeleton()}</div></div>`;
   loadContent("guides", "guides-content");
 }
-
-// Ma'lumot sahifasini yuklab, HTML'ga aylantirish
-async function loadContent(pageKey, targetId) {
+function proseSkeleton() {
+  const w = [70,100,92,100,48,100,84];
+  return `<div class="prose">${w.map((p,i)=>`<div class="sk" style="height:${i===0?15:11}px;width:${p}%;margin-bottom:${i===0?16:10}px"></div>`).join("")}</div>`;
+}
+async function loadContent(key, targetId) {
   try {
-    const resp = await fetch(`/api/content/${pageKey}`);
-    const data = await resp.json();
-    const el = document.getElementById(targetId);
-    if (!el) return;
-    if (!resp.ok) { el.innerHTML = `<div class="state-msg error">${escapeHtml(data.error || "Topilmadi")}</div>`; return; }
-    el.innerHTML = `<div class="content-body">` + data.sections.map(renderSection).join("") + `</div>`;
+    const data = await api(`/api/content/${key}`);
+    const el = $(targetId);
+    if (el) el.innerHTML = `<div class="prose view-in">${data.sections.map(renderSection).join("")}</div>`;
   } catch (err) {
-    const el = document.getElementById(targetId);
-    if (el) el.innerHTML = `<div class="state-msg error">Xatolik: ${escapeHtml(err.message)}</div>`;
+    const el = $(targetId);
+    if (el) el.innerHTML = errorView("Ulanib bo'lmadi", "Qayta urinib ko'ring.");
   }
 }
 function renderSection(s) {
@@ -514,17 +1553,441 @@ function renderSection(s) {
     case "subheading": return `<div class="c-subheading">${escapeHtml(s.text)}</div>`;
     case "text": return `<p class="c-text">${escapeHtml(s.text)}</p>`;
     case "note": return `<div class="c-note">${escapeHtml(s.text)}</div>`;
-    case "list": return `<ul class="c-list">${s.items.map((i) => `<li>${escapeHtml(i)}</li>`).join("")}</ul>`;
-    case "numbered": return `<ol class="c-numbered">${s.items.map((i) => `<li>${escapeHtml(i)}</li>`).join("")}</ol>`;
+    case "list": return `<ul class="c-list">${s.items.map((i)=>`<li>${escapeHtml(i)}</li>`).join("")}</ul>`;
+    case "numbered": return `<ol class="c-numbered">${s.items.map((i)=>`<li>${escapeHtml(i)}</li>`).join("")}</ol>`;
     default: return "";
   }
 }
 
-// ---------- Ishga tushirish ----------
-document.querySelectorAll(".nav-item").forEach((b) => {
-  b.onclick = () => setNav(b.dataset.nav);
-});
-loadData();
+/* ==================== Modal sahifalar ==================== */
+function openPage(id) {
+  $(id).classList.add("open");
+  if (!overlayStack.includes(id)) overlayStack.push(id);
+  try { tg?.BackButton?.show(); } catch (e) {}
+}
+function closePage(id) {
+  $(id).classList.remove("open");
+  overlayStack = overlayStack.filter((x) => x !== id);
+  if (!overlayStack.length) { try { tg?.BackButton?.hide(); } catch (e) {} }
+}
+function popOverlay() {
+  if (closeImageViewer()) return;
+  if (sheetOpen) { closeSheet(); return; }
+  const top = overlayStack[overlayStack.length - 1];
+  if (top) closePage(top);
+}
+document.querySelectorAll("[data-close]").forEach((b) => { b.onclick = () => { haptic("light"); closePage(b.dataset.close); }; });
+try { tg?.onEvent("backButtonClicked", popOverlay); } catch (e) {}
+
+/* ==================== Tafsilot ==================== */
+let detailTask = null, detailStatuses = [], currentBlocks = [];
+
+async function openDetail(id) {
+  haptic("light");
+  const known = boardData.tasks.find((t) => t.id === id);
+  detailTask = known || null;
+  currentBlocks = [];
+  $("d-notion").classList.toggle("hidden", !isManager());
+  $("d-notion").href = known?.url || "#";
+  $("d-body").innerHTML = detailHeadHtml(known) + `<div class="ncontent">${
+    [70,100,94,100,60].map((w,i)=>`<div class="sk" style="height:${i===0?15:11}px;width:${w}%;margin-bottom:12px"></div>`).join("")
+  }</div>`;
+  openPage("detail");
+
+  try {
+    const data = await api(`/api/task/${encodeURIComponent(id)}`);
+    detailTask = data.task;
+    detailStatuses = data.statusOrder || boardData.statusOrder;
+    $("d-notion").href = data.task.url;
+    renderDetail(data.blocks);
+  } catch (err) {
+    $("d-body").innerHTML = detailHeadHtml(detailTask) + errorView("Ochib bo'lmadi", err.message);
+  }
+}
+
+function detailHeadHtml(t) {
+  if (!t) return `<div class="d-head"><div class="sk" style="height:24px;width:80%"></div></div>`;
+  return `<div class="d-head">
+      <div class="d-kicker">Topshiriq briefi</div>
+      <h1 class="d-title">${escapeHtml(t.name)}</h1>
+      ${t.projectName ? `<div class="d-proj"><svg class="ico ico-sm"><use href="#i-folder-fill"/></svg>${escapeHtml(t.projectName)}</div>` : ""}
+    </div>`;
+}
+
+function renderDetail(blocks) {
+  if (blocks !== undefined) currentBlocks = blocks;
+  const t = detailTask;
+  const today = todayMidnight();
+  const dl = parseDate(t.dedlayn);
+  const late = dl && dl < today;
+  const p = prioOf(t);
+
+  const canChange = isManager() || t.designers.some((d) => d.id === boardData.requester.id);
+
+  const rows = [];
+  rows.push(`<button class="brief-meta-item" id="row-status" ${canChange ? "" : "disabled"}>
+      <span class="k"><svg class="ico"><use href="#i-task-fill"/></svg>Holati</span>
+      <span class="v status-v"><i style="background:${statusColor(t.status)}"></i>${escapeHtml(t.status || "Belgilanmagan")}${canChange ? `<svg class="ico ico-sm chev"><use href="#i-right"/></svg>` : ""}</span>
+    </button>`);
+  if (dl) {
+    const rel = deadlineLabel(dl, today), short = dl.getDate() + " " + MON_SHORT[dl.getMonth()];
+    rows.push(`<div class="brief-meta-item">
+        <span class="k"><svg class="ico"><use href="#i-cal-fill"/></svg>Dedlayn</span>
+        <span class="v ${late ? "late" : ""}">${escapeHtml(rel === short ? fullDate(dl) : fullDate(dl) + " · " + rel)}</span>
+      </div>`);
+  }
+  rows.push(`<div class="brief-meta-item ${(!isManager() || !t.designers.length) ? "wide" : ""}">
+      <span class="k"><svg class="ico"><use href="#i-flag"/></svg>Prioritet</span>
+      <span class="v">${escapeHtml(p ? p.label : "Oddiy")}</span>
+    </div>`);
+  if (isManager() && t.designers.length) {
+    rows.push(`<div class="brief-meta-item ${dl ? "" : "wide"}">
+        <span class="k"><svg class="ico"><use href="#i-user-fill"/></svg>Dizayner</span>
+        <span class="v people">${t.designers.map((d) =>
+          `<span class="person"><i style="background:${personColor(d.name)}"></i>${escapeHtml(d.name)}</span>`).join("")}</span>
+      </div>`);
+  }
+
+  const content = currentBlocks && currentBlocks.length
+    ? `<div class="brief-label">Brief</div><div class="ncontent">${renderBlocks(currentBlocks)}</div>`
+    : `<div class="d-note">Bu topshiriq uchun brief hali yozilmagan.</div>`;
+
+  $("d-body").innerHTML = detailHeadHtml(t)
+    + `<div class="brief-meta">${rows.join("")}</div>`
+    + (canChange ? "" : `<div class="d-note">Bu vazifa sizga biriktirilmagan, shuning uchun bosqichni o'zgartirib bo'lmaydi.</div>`)
+    + content;
+
+  const rs = $("row-status");
+  if (rs && canChange) rs.onclick = openStatusPicker;
+  $("d-body").querySelectorAll(".n-image").forEach((el) => {
+    el.onclick = () => openImageViewer(el.dataset.image, el.dataset.caption || "");
+    const img = el.querySelector("img");
+    if (img) img.addEventListener("error", () => el.classList.add("failed"), { once: true });
+  });
+}
+
+/* Notion bloklarini HTML'ga - ketma-ket ro'yxatlarni bitta <ul>/<ol> ga yig'amiz */
+function rt(segs) {
+  return (segs || []).map((s) => {
+    let t = escapeHtml(s.t);
+    if (s.c) t = `<code>${t}</code>`;
+    if (s.b) t = `<b>${t}</b>`;
+    if (s.i) t = `<i>${t}</i>`;
+    if (s.s) t = `<s>${t}</s>`;
+    if (s.u) t = `<u>${t}</u>`;
+    if (s.href) t = `<a href="${escapeHtml(safeUrl(s.href))}" target="_blank" rel="noopener">${t}</a>`;
+    return t;
+  }).join("");
+}
+
+function safeUrl(value) {
+  if (!value) return "#";
+  try {
+    const u = new URL(value, location.origin);
+    return (u.protocol === "http:" || u.protocol === "https:") ? u.href : "#";
+  } catch (_) { return "#"; }
+}
+
+function urlHost(value) {
+  try { return new URL(value, location.origin).hostname.replace(/^www\./, "") || "Havola"; }
+  catch (_) { return "Havola"; }
+}
+
+function fileCardHtml(url, title, icon) {
+  const href = safeUrl(url);
+  return `<a class="n-file" href="${escapeHtml(href)}" target="_blank" rel="noopener">
+      <span class="file-ico"><svg class="ico"><use href="#${icon || "i-file"}"/></svg></span>
+      <span class="file-copy"><span class="file-title">${escapeHtml(title || "Fayl")}</span><span class="file-host">${escapeHtml(urlHost(href))}</span></span>
+      <svg class="ico ico-sm file-arrow"><use href="#i-right"/></svg>
+    </a>`;
+}
+
+function calloutTone(emoji) {
+  if (["⚠️", "❗", "⛔", "🚫"].includes(emoji)) return "warn";
+  if (["ℹ️", "💡", "🔵"].includes(emoji)) return "info";
+  return "";
+}
+
+function renderBlocks(blocks) {
+  let out = "", list = null, buf = [];
+  const flush = () => {
+    if (!list) return;
+    out += `<${list}>${buf.join("")}</${list}>`;
+    list = null; buf = [];
+  };
+
+  for (const b of blocks) {
+    const kids = b.children?.length ? `<div class="n-sub">${renderBlocks(b.children)}</div>` : "";
+
+    if (b.type === "bulleted_list_item" || b.type === "numbered_list_item") {
+      const want = b.type === "bulleted_list_item" ? "ul" : "ol";
+      if (list !== want) { flush(); list = want; }
+      const itemText = rt(b.text);
+      buf.push(`<li>${itemText || "&nbsp;"}${kids}</li>`);
+      continue;
+    }
+    flush();
+
+    switch (b.type) {
+      case "heading_1": out += `<div class="n-h1">${rt(b.text)}</div>`; break;
+      case "heading_2": out += `<div class="n-h2">${rt(b.text)}</div>`; break;
+      case "heading_3": out += `<div class="n-h3">${rt(b.text)}</div>`; break;
+      case "paragraph": {
+        const inner = rt(b.text);
+        if (inner.trim()) out += `<p>${inner}</p>`;
+        break;
+      }
+      case "to_do":
+        out += `<div class="n-todo ${b.checked ? "done" : ""}">
+            <span class="box">${b.checked ? `<svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.4l4.6 4.6L19 7.4"/></svg>` : ""}</span>
+            <span class="t">${rt(b.text)}</span></div>`;
+        break;
+      case "quote": out += `<blockquote>${rt(b.text)}</blockquote>`; break;
+      case "callout":
+        out += `<div class="n-callout ${calloutTone(b.emoji)}">${b.emoji ? `<span class="e">${escapeHtml(b.emoji)}</span>` : ""}<span>${rt(b.text)}</span></div>`;
+        break;
+      case "code": out += `<pre><code>${escapeHtml((b.text || []).map((s) => s.t).join(""))}</code></pre>`; break;
+      case "divider": out += `<hr>`; break;
+      case "image":
+        if (b.url) {
+          const imageUrl = safeUrl(b.url), cap = rt(b.caption), capText = (b.caption || []).map((s) => s.t).join("");
+          out += `<button class="n-image" data-image="${escapeHtml(imageUrl)}" data-caption="${escapeHtml(capText)}" aria-label="Rasmni kattalashtirish"><img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(capText)}" loading="lazy" decoding="async" referrerpolicy="no-referrer"></button>`
+            + (cap ? `<div class="n-cap">${cap}</div>` : "");
+        }
+        break;
+      case "bookmark": case "embed": case "link_preview":
+        if (b.url) out += fileCardHtml(b.url, (b.caption || []).map((s) => s.t).join("") || urlHost(b.url), "i-ext");
+        break;
+      case "file": case "pdf": case "video":
+        if (b.url) out += fileCardHtml(b.url, b.name || (b.type === "video" ? "Video" : b.type === "pdf" ? "PDF hujjat" : "Fayl"), "i-file");
+        break;
+      case "toggle":
+        out += `<details class="n-toggle"><summary>${rt(b.text)}</summary>${kids}</details>`;
+        continue;
+      case "container":
+        out += kids;
+        continue;
+      case "child_page":
+        out += `<div class="n-file"><svg class="ico ico-sm"><use href="#i-file"/></svg>${rt(b.text)}</div>`;
+        break;
+      default: break;
+    }
+    out += kids;
+  }
+  flush();
+  return out;
+}
+
+function openImageViewer(url, caption) {
+  const viewer = $("image-viewer"), image = $("image-full");
+  image.src = safeUrl(url);
+  image.alt = caption || "Reference rasmi";
+  viewer.classList.add("open");
+  try { tg?.BackButton?.show(); } catch (e) {}
+}
+
+function closeImageViewer() {
+  const viewer = $("image-viewer");
+  if (!viewer.classList.contains("open")) return false;
+  viewer.classList.remove("open");
+  $("image-full").removeAttribute("src");
+  return true;
+}
+
+$("image-close").onclick = closeImageViewer;
+$("image-viewer").onclick = (e) => { if (e.target.id === "image-viewer" || e.target.classList.contains("lightbox-stage")) closeImageViewer(); };
+
+/* ==================== Holatni o'zgartirish ==================== */
+const scrim = $("scrim"), sheet = $("sheet");
+let sheetOpen = false;
+
+function openSheet(html) {
+  sheet.innerHTML = `<div class="grab"></div>${html}`;
+  sheetOpen = true;
+  scrim.classList.add("open");
+  sheet.classList.add("open");
+  try { tg?.BackButton?.show(); } catch (e) {}
+}
+function closeSheet() {
+  if (!sheetOpen) return;
+  sheetOpen = false;
+  scrim.classList.remove("open");
+  sheet.classList.remove("open");
+  if (!overlayStack.length) { try { tg?.BackButton?.hide(); } catch (e) {} }
+}
+scrim.onclick = closeSheet;
+
+function openStatusPicker() {
+  haptic("light");
+  const list = detailStatuses.length ? detailStatuses : boardData.statusOrder;
+  const opts = list.map((s) => {
+    const blocked = !isManager() && s === "Archive";
+    return `<button class="opt" data-status="${escapeHtml(s)}" ${blocked ? "disabled" : ""}>
+        <i style="background:${statusColor(s)}"></i>${escapeHtml(s)}
+        ${s === detailTask.status ? `<svg class="ico ico-sm ck"><use href="#i-tick"/></svg>` : ""}
+      </button>`;
+  }).join("");
+  openSheet(`<h3>Bosqichni o'zgartirish</h3>${opts}`);
+
+  sheet.querySelectorAll(".opt").forEach((el) => {
+    if (el.disabled) return;
+    el.onclick = () => changeStatus(el.dataset.status);
+  });
+}
+
+async function changeStatus(status) {
+  if (status === detailTask.status) { closeSheet(); return; }
+  closeSheet();
+  const prev = detailTask.status;
+  detailTask.status = status;           // optimistik
+  renderDetail();
+  try {
+    await api(`/api/task/${encodeURIComponent(detailTask.id)}/status`, { method: "PATCH", body: { status } });
+    hapticNotify("success");
+    toast(`Bosqich: ${status}`);
+    // Ro'yxatdagi nusxani ham yangilaymiz
+    const t = boardData.tasks.find((x) => x.id === detailTask.id);
+    if (t) t.status = status;
+    rebuildBoard();
+    renderNav();
+  } catch (err) {
+    detailTask.status = prev;
+    renderDetail();
+    hapticNotify("error");
+    toast(err.message || "O'zgartirib bo'lmadi", true);
+  }
+}
+
+// board obyektini tasks'dan qayta yig'amiz (status o'zgargandan keyin)
+function rebuildBoard() {
+  const b = {};
+  boardData.statusOrder.forEach((s) => (b[s] = []));
+  boardData.tasks.forEach((t) => (b[t.status] = b[t.status] || []).push(t));
+  boardData.board = b;
+}
+
+/* ==================== Yangi vazifa ==================== */
+const form = { name: "", projectId: "", designerIds: [], dedlayn: "", prioritet: "", status: "" };
+
+$("fab").onclick = async () => {
+  haptic("medium");
+  form.name = ""; form.projectId = ""; form.designerIds = []; form.dedlayn = ""; form.prioritet = ""; form.status = "";
+  $("c-body").innerHTML = `<div class="form">${[64,100,100,100].map((w)=>`<div class="sk" style="height:44px;width:${w}%"></div>`).join("")}</div>`;
+  openPage("create");
+  try {
+    if (!metaData) metaData = await api("/api/meta");
+    form.status = metaData.statusOrder[0] || "Draft";
+    renderCreateForm();
+  } catch (err) {
+    $("c-body").innerHTML = errorView("Forma ochilmadi", err.message);
+  }
+};
+
+function renderCreateForm() {
+  const projects = metaData.projects || [];
+  const designers = (metaData.designers || []).filter((d) => d.degree !== "Art director" && d.degree !== "Creative Director");
+  const people = designers.length ? designers : (metaData.designers || []);
+  const prios = metaData.priorities || [];
+  const statuses = metaData.statusOrder || [];
+
+  $("c-body").innerHTML = `<div class="form">
+      <div class="field">
+        <label>Vazifa nomi <span class="req">*</span></label>
+        <textarea class="ta" id="f-name" rows="2" placeholder="Masalan: Yangi yil banneri - key visual"></textarea>
+      </div>
+      <div class="field">
+        <label>Loyiha</label>
+        <select class="select" id="f-project">
+          <option value="">— tanlanmagan —</option>
+          ${projects.map((p)=>`<option value="${escapeHtml(p.id)}">${escapeHtml(p.name)}</option>`).join("")}
+        </select>
+      </div>
+      <div class="field">
+        <label>Dizaynerlar</label>
+        <div class="chips" id="f-people">
+          ${people.map((d)=>`<button class="chip" data-id="${escapeHtml(d.id)}"><i style="background:${personColor(d.name)}"></i>${escapeHtml(d.name)}</button>`).join("")}
+        </div>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label>Muddat</label>
+          <input class="input" type="date" id="f-date">
+        </div>
+        <div class="field">
+          <label>Bosqich</label>
+          <select class="select" id="f-status">
+            ${statuses.map((s)=>`<option value="${escapeHtml(s)}"${s===form.status?" selected":""}>${escapeHtml(s)}</option>`).join("")}
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label>Prioritet</label>
+        <div class="chips" id="f-prio">
+          ${prios.map((p)=>`<button class="chip p" data-p="${escapeHtml(p)}">${escapeHtml(PRIO[p]?.label || p)}</button>`).join("")}
+        </div>
+      </div>
+    </div>`;
+
+  $("f-name").oninput = (e) => { form.name = e.target.value; updateSave(); };
+  $("f-project").onchange = (e) => { form.projectId = e.target.value; };
+  $("f-date").onchange = (e) => { form.dedlayn = e.target.value; };
+  $("f-status").onchange = (e) => { form.status = e.target.value; };
+  $("f-people").querySelectorAll(".chip").forEach((el) => {
+    el.onclick = () => {
+      const id = el.dataset.id;
+      const i = form.designerIds.indexOf(id);
+      if (i >= 0) form.designerIds.splice(i, 1); else form.designerIds.push(id);
+      el.classList.toggle("on", i < 0);
+      hapticSelect();
+    };
+  });
+  $("f-prio").querySelectorAll(".chip").forEach((el) => {
+    el.onclick = () => {
+      const p = el.dataset.p;
+      const on = form.prioritet === p;
+      form.prioritet = on ? "" : p;
+      $("f-prio").querySelectorAll(".chip").forEach((x) => x.classList.remove("on"));
+      if (!on) el.classList.add("on");
+      hapticSelect();
+    };
+  });
+  updateSave();
+}
+
+function updateSave() { $("c-save").disabled = !form.name.trim(); }
+
+$("c-save").onclick = async () => {
+  if (!form.name.trim()) return;
+  const btn = $("c-save");
+  btn.disabled = true; btn.textContent = "Saqlanmoqda…";
+  try {
+    const res = await api("/api/tasks", { method: "POST", body: {
+      name: form.name.trim(),
+      projectId: form.projectId || null,
+      designerIds: form.designerIds,
+      dedlayn: form.dedlayn || null,
+      prioritet: form.prioritet || null,
+      status: form.status || null,
+    }});
+    hapticNotify("success");
+    closePage("create");
+    toast("Vazifa yaratildi");
+    // Ehtiyot chorasi: ayni paytda board qayta yuklangan bo'lsa, ikki nusxa paydo bo'lmasin
+    if (!boardData.tasks.some((t) => t.id === res.task.id)) boardData.tasks.unshift(res.task);
+    rebuildBoard();
+    renderNav();
+  } catch (err) {
+    hapticNotify("error");
+    toast(err.message || "Saqlab bo'lmadi", true);
+  } finally {
+    btn.disabled = false; btn.textContent = "Saqlash";
+    updateSave();
+  }
+};
+
+/* ==================== Start ==================== */
+document.querySelectorAll(".nav-item").forEach((b) => { b.onclick = () => setNav(b.dataset.nav); });
+loadData(false);
 </script>
 </body>
 </html>

@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 760" role="img" aria-labelledby="title desc">
+  <title id="title">Reference composition one</title>
+  <desc id="desc">Warm editorial composition used to preview Notion image blocks.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#241c17"/><stop offset="1" stop-color="#7f4e36"/></linearGradient>
+    <radialGradient id="sun"><stop stop-color="#fff7b0"/><stop offset="1" stop-color="#ffb777"/></radialGradient>
+  </defs>
+  <rect width="1200" height="760" fill="url(#bg)"/>
+  <circle cx="905" cy="145" r="170" fill="url(#sun)" opacity=".92"/>
+  <path d="M0 640C220 510 390 555 570 452c177-102 349-125 630-28v336H0z" fill="#12100f" opacity=".88"/>
+  <rect x="88" y="76" width="235" height="42" rx="21" fill="#fff" opacity=".92"/>
+  <text x="116" y="104" font-family="Arial, sans-serif" font-size="18" font-weight="700" letter-spacing="3">REFERENCE 01</text>
+  <text x="86" y="590" fill="#fff" font-family="Arial, sans-serif" font-size="78" font-weight="700">Warm contrast</text>
+  <text x="91" y="642" fill="#fff" opacity=".65" font-family="Arial, sans-serif" font-size="25">Editorial light · quiet composition · clear focal point</text>
+</svg>

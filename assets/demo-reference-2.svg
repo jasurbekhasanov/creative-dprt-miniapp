@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 760" role="img" aria-labelledby="title desc">
+  <title id="title">Reference composition two</title>
+  <desc id="desc">Cool cinematic composition used to preview Notion image blocks.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#0c1431"/><stop offset="1" stop-color="#4530a8"/></linearGradient>
+    <radialGradient id="glow"><stop stop-color="#88c6ff" stop-opacity=".95"/><stop offset="1" stop-color="#88c6ff" stop-opacity="0"/></radialGradient>
+  </defs>
+  <rect width="1200" height="760" fill="url(#bg)"/>
+  <circle cx="600" cy="370" r="360" fill="url(#glow)"/>
+  <g fill="#060816" opacity=".88">
+    <ellipse cx="600" cy="370" rx="96" ry="118"/><path d="M420 760c14-194 76-290 180-290s166 96 180 290z"/>
+    <ellipse cx="265" cy="430" rx="70" ry="88"/><path d="M130 760c10-145 55-218 135-218s125 73 135 218z"/>
+    <ellipse cx="930" cy="420" rx="70" ry="88"/><path d="M795 760c10-145 55-218 135-218s125 73 135 218z"/>
+  </g>
+  <rect x="88" y="76" width="235" height="42" rx="21" fill="#fff" opacity=".92"/>
+  <text x="116" y="104" font-family="Arial, sans-serif" font-size="18" font-weight="700" letter-spacing="3">REFERENCE 02</text>
+  <text x="86" y="646" fill="#fff" font-family="Arial, sans-serif" font-size="72" font-weight="700">Night atmosphere</text>
+  <text x="91" y="695" fill="#fff" opacity=".65" font-family="Arial, sans-serif" font-size="25">Dark blue · cinematic · human focus</text>
+</svg>
