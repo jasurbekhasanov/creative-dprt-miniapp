@@ -925,10 +925,13 @@ const demoRole = qs.get("role") || "designer";
 const devUsername = qs.get("username") || "";
 const BOARD_CACHE_MAX_AGE = 5 * 60 * 1000;
 
-function boardCacheKey() {
+function viewerCacheId() {
   const telegramId = tg?.initDataUnsafe?.user?.id;
-  const viewer = telegramId || devUsername || (isDemo ? `demo-${demoRole}` : "unknown");
-  return `creative-dprt:board:v2:${viewer}`;
+  return telegramId || devUsername || (isDemo ? `demo-${demoRole}` : "unknown");
+}
+
+function boardCacheKey() {
+  return `creative-dprt:board:v2:${viewerCacheId()}`;
 }
 
 function readBoardCache() {
@@ -1034,6 +1037,7 @@ async function loadData(silent) {
     renderMe(boardData.requester.name);
     $("fab").classList.toggle("hidden", !isManager() || (currentNav !== "home" && currentNav !== "tasks"));
     renderNav();
+    prefetchLikelyBrief();
   } catch (err) {
     if (showedCache) {
       toast("Yangilab bo‘lmadi — oxirgi ma’lumot ko‘rsatildi", true);
@@ -1617,28 +1621,91 @@ document.querySelectorAll("[data-close]").forEach((b) => { b.onclick = () => { h
 try { tg?.onEvent("backButtonClicked", popOverlay); } catch (e) {}
 
 /* ==================== Tafsilot ==================== */
-let detailTask = null, detailStatuses = [], currentBlocks = [];
+let detailTask = null, detailStatuses = [], currentBlocks = [], detailRequestSeq = 0;
+const DETAIL_CACHE_MAX_AGE = 10 * 60 * 1000;
+const detailMemoryCache = new Map();
+const detailInflight = new Map();
+let briefPrefetchDone = false;
+
+function detailCacheKey() {
+  return `creative-dprt:brief:v1:${viewerCacheId()}`;
+}
+
+function readDetailCache(id) {
+  const memory = detailMemoryCache.get(id);
+  if (memory && Date.now() - memory.at <= DETAIL_CACHE_MAX_AGE) return memory.data;
+  try {
+    const cached = JSON.parse(localStorage.getItem(detailCacheKey()) || "null");
+    if (cached?.id !== id || !cached.data || Date.now() - cached.at > DETAIL_CACHE_MAX_AGE) return null;
+    detailMemoryCache.set(id, { at: cached.at, data: cached.data });
+    return cached.data;
+  } catch (e) { return null; }
+}
+
+function writeDetailCache(id, data) {
+  const at = Date.now();
+  detailMemoryCache.set(id, { at, data });
+  try {
+    // Faqat oxirgi ochilgan brief saqlanadi: katta Notion sahifalari localStorage'ni to'ldirmaydi.
+    localStorage.setItem(detailCacheKey(), JSON.stringify({ id, at, data }));
+  } catch (e) {}
+}
+
+function fetchDetailData(id) {
+  if (detailInflight.has(id)) return detailInflight.get(id);
+  const request = api(`/api/task/${encodeURIComponent(id)}`)
+    .finally(() => detailInflight.delete(id));
+  detailInflight.set(id, request);
+  return request;
+}
+
+function prefetchLikelyBrief() {
+  if (briefPrefetchDone || isDemo || !boardData?.tasks?.length) return;
+  const likely = boardData.tasks.filter(isActive).slice().sort(urgencySort)[0];
+  if (!likely) return;
+  briefPrefetchDone = true;
+  setTimeout(() => {
+    fetchDetailData(likely.id)
+      .then((data) => writeDetailCache(likely.id, data))
+      .catch(() => {});
+  }, 250);
+}
 
 async function openDetail(id) {
   haptic("light");
+  const requestSeq = ++detailRequestSeq;
   const known = boardData.tasks.find((t) => t.id === id);
   detailTask = known || null;
+  detailStatuses = boardData.statusOrder;
   currentBlocks = [];
   $("d-notion").classList.toggle("hidden", !isManager());
   $("d-notion").href = known?.url || "#";
-  $("d-body").innerHTML = detailHeadHtml(known) + `<div class="ncontent">${
-    [70,100,94,100,60].map((w,i)=>`<div class="sk" style="height:${i===0?15:11}px;width:${w}%;margin-bottom:12px"></div>`).join("")
-  }</div>`;
   openPage("detail");
 
+  const cached = readDetailCache(id);
+  if (cached) {
+    // Board'dagi status/deadline brief keshidagidan yangiroq bo'lishi mumkin.
+    detailTask = known ? { ...cached.task, ...known } : cached.task;
+    detailStatuses = cached.statusOrder || boardData.statusOrder;
+    currentBlocks = cached.blocks || [];
+    $("d-notion").href = detailTask.url;
+    renderDetail(currentBlocks, false);
+  } else {
+    renderDetail(undefined, true);
+  }
+
   try {
-    const data = await api(`/api/task/${encodeURIComponent(id)}`);
+    const data = await fetchDetailData(id);
+    if (requestSeq !== detailRequestSeq) return;
     detailTask = data.task;
     detailStatuses = data.statusOrder || boardData.statusOrder;
     $("d-notion").href = data.task.url;
-    renderDetail(data.blocks);
+    writeDetailCache(id, data);
+    renderDetail(data.blocks, false);
   } catch (err) {
-    $("d-body").innerHTML = detailHeadHtml(detailTask) + errorView("Ochib bo'lmadi", err.message);
+    if (requestSeq !== detailRequestSeq) return;
+    if (cached) toast("Briefni yangilab bo‘lmadi — oxirgi nusxa ko‘rsatildi", true);
+    else $("d-body").innerHTML = detailHeadHtml(detailTask) + errorView("Ochib bo'lmadi", err.message);
   }
 }
 
@@ -1651,9 +1718,15 @@ function detailHeadHtml(t) {
     </div>`;
 }
 
-function renderDetail(blocks) {
+function renderDetail(blocks, loading) {
   if (blocks !== undefined) currentBlocks = blocks;
   const t = detailTask;
+  if (!t) {
+    $("d-body").innerHTML = detailHeadHtml(null) + `<div class="ncontent">${
+      [70,100,94,100,60].map((w,i)=>`<div class="sk" style="height:${i===0?15:11}px;width:${w}%;margin-bottom:12px"></div>`).join("")
+    }</div>`;
+    return;
+  }
   const today = todayMidnight();
   const dl = parseDate(t.dedlayn);
   const late = dl && dl < today;
@@ -1685,9 +1758,13 @@ function renderDetail(blocks) {
       </div>`);
   }
 
-  const content = currentBlocks && currentBlocks.length
-    ? `<div class="brief-label">Brief</div><div class="ncontent">${renderBlocks(currentBlocks)}</div>`
-    : `<div class="d-note">Bu topshiriq uchun brief hali yozilmagan.</div>`;
+  const content = loading
+    ? `<div class="brief-label">Brief yuklanmoqda</div><div class="ncontent">${
+        [72,100,94,86,100,58].map((w,i)=>`<div class="sk" style="height:${i===0?15:11}px;width:${w}%;margin-bottom:12px"></div>`).join("")
+      }</div>`
+    : currentBlocks && currentBlocks.length
+      ? `<div class="brief-label">Brief</div><div class="ncontent">${renderBlocks(currentBlocks)}</div>`
+      : `<div class="d-note">Bu topshiriq uchun brief hali yozilmagan.</div>`;
 
   $("d-body").innerHTML = detailHeadHtml(t)
     + `<div class="brief-meta">${rows.join("")}</div>`
@@ -1887,6 +1964,13 @@ async function changeStatus(status) {
     if (t) t.status = status;
     rebuildBoard();
     writeBoardCache(boardData);
+    writeDetailCache(detailTask.id, {
+      task: detailTask,
+      blocks: currentBlocks,
+      statusOrder: detailStatuses,
+      statusOptions: boardData.statusOptions,
+      priorities: boardData.priorities,
+    });
     renderNav();
   } catch (err) {
     detailTask.status = prev;

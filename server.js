@@ -435,6 +435,30 @@ async function readBlocks(blockId, depth) {
   return out;
 }
 
+// Brief bloklari ko'pincha taskning o'zidan og'irroq. Bir xil brief qisqa vaqt
+// ichida qayta ochilsa, Notion'ni yana boshidan o'qimaymiz. Signed file URL'lar
+// odatda ancha uzoq yashaydi, kesh esa atigi 2 daqiqa.
+const BRIEF_CACHE_TTL_MS = 2 * 60 * 1000;
+const briefCache = new Map();
+
+async function getBriefBlocks(pageId) {
+  const hit = briefCache.get(pageId);
+  if (hit?.value && Date.now() - hit.at < BRIEF_CACHE_TTL_MS) return hit.value;
+  if (hit?.inflight) return hit.inflight;
+
+  if (!hit && briefCache.size >= 50) briefCache.delete(briefCache.keys().next().value);
+  const entry = hit || {};
+  entry.inflight = readBlocks(pageId, 4)
+    .then((value) => {
+      entry.value = value;
+      entry.at = Date.now();
+      return value;
+    })
+    .finally(() => { entry.inflight = null; });
+  briefCache.set(pageId, entry);
+  return entry.inflight;
+}
+
 /* ==========================================================================
    GET /api/task/:id - tafsilot + Notion kontenti
    ========================================================================== */
@@ -444,8 +468,17 @@ app.get("/api/task/:id", async (req, res) => {
     if (!auth) return;
     const { requester, designers } = auth;
 
-    const page = await notion.pages.retrieve({ page_id: req.params.id });
-    const projects = await getProjects();
+    // Sahifa xususiyatlari va brief bloklari bir-biriga bog'liq emas; parallel
+    // olish birinchi ochilishdagi ikki ketma-ket Notion kutishini bittaga tushiradi.
+    const [page, projects, schema, blocks] = await Promise.all([
+      notion.pages.retrieve({ page_id: req.params.id }),
+      getProjects(),
+      getSchema(),
+      getBriefBlocks(req.params.id).catch((e) => {
+        console.error("Bloklarni o'qishda xato:", e.message);
+        return [];
+      }),
+    ]);
     const task = formatTask(page, designers, projects);
 
     // Dizayner faqat o'ziga biriktirilgan ishni ko'ra oladi
@@ -453,15 +486,7 @@ app.get("/api/task/:id", async (req, res) => {
       return res.status(403).json({ error: "Bu vazifa sizga biriktirilmagan." });
     }
 
-    let blocks = [];
-    try {
-      blocks = await readBlocks(req.params.id, 4);
-    } catch (e) {
-      console.error("Bloklarni o'qishda xato:", e.message);
-    }
-
-    const schema = await getSchema();
-    // Notion yuklagan rasm/fayl URL'lari vaqtinchalik. Har ochishda yangi URL qaytsin.
+    // Browser vaqtinchalik rasm/fayl URL'larini uzoq muddat saqlab qolmasin.
     res.set("Cache-Control", "private, no-store, max-age=0");
     res.json({ task, blocks, statusOrder: schema.statusOrder, statusOptions: schema.statusOptions, priorities: schema.priorities });
   } catch (err) {
