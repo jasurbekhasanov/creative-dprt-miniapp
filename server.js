@@ -55,7 +55,10 @@ function verifyInitData(initData, botToken) {
   const hash = params.get("hash");
   if (!hash) return null;
   params.delete("hash");
-  params.delete("signature"); // Telegram'ning yangi Ed25519 maydoni - HMAC'ga kirmaydi
+
+  // Bot token bilan HMAC tekshiruvida `hash`dan boshqa barcha kelgan
+  // maydonlar qatnashadi. Yangi `signature` maydoni faqat uchinchi tomon
+  // Ed25519 tekshiruvida chiqarib tashlanadi; bu yerda uni saqlab qolamiz.
 
   const dataCheckString = [...params.entries()]
     .sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0))
