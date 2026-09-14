@@ -923,6 +923,27 @@ const qs = new URLSearchParams(location.search);
 const isDemo = qs.get("demo") === "1";
 const demoRole = qs.get("role") || "designer";
 const devUsername = qs.get("username") || "";
+const BOARD_CACHE_MAX_AGE = 5 * 60 * 1000;
+
+function boardCacheKey() {
+  const telegramId = tg?.initDataUnsafe?.user?.id;
+  const viewer = telegramId || devUsername || (isDemo ? `demo-${demoRole}` : "unknown");
+  return `creative-dprt:board:v2:${viewer}`;
+}
+
+function readBoardCache() {
+  try {
+    const cached = JSON.parse(localStorage.getItem(boardCacheKey()) || "null");
+    if (!cached?.data || Date.now() - cached.at > BOARD_CACHE_MAX_AGE) return null;
+    return cached.data;
+  } catch (e) { return null; }
+}
+
+function writeBoardCache(data) {
+  try {
+    localStorage.setItem(boardCacheKey(), JSON.stringify({ at: Date.now(), data }));
+  } catch (e) {}
+}
 
 function apiUrl(path) {
   if (!devUsername) return path;
@@ -995,13 +1016,29 @@ function errorView(title, text) {
 }
 
 async function loadData(silent) {
-  if (!silent) viewEl.innerHTML = skeletonHtml();
+  let showedCache = false;
+  if (!silent) {
+    const cached = readBoardCache();
+    if (cached) {
+      boardData = cached;
+      renderMe(boardData.requester.name);
+      renderNav();
+      showedCache = true;
+    } else {
+      viewEl.innerHTML = skeletonHtml();
+    }
+  }
   try {
     boardData = await api("/api/board");
+    writeBoardCache(boardData);
     renderMe(boardData.requester.name);
     $("fab").classList.toggle("hidden", !isManager() || (currentNav !== "home" && currentNav !== "tasks"));
     renderNav();
   } catch (err) {
+    if (showedCache) {
+      toast("Yangilab bo‘lmadi — oxirgi ma’lumot ko‘rsatildi", true);
+      return;
+    }
     if (err.status === 401) viewEl.innerHTML = errorView("Kirish tasdiqlanmadi", "Ilovani Telegram ichidagi tugma orqali oching.");
     else if (err.status === 403) viewEl.innerHTML = errorView("Kirish yopiq", err.message);
     else viewEl.innerHTML = errorView("Ulanib bo'lmadi", err.message || "Qayta urinib ko'ring.");
@@ -1849,6 +1886,7 @@ async function changeStatus(status) {
     const t = boardData.tasks.find((x) => x.id === detailTask.id);
     if (t) t.status = status;
     rebuildBoard();
+    writeBoardCache(boardData);
     renderNav();
   } catch (err) {
     detailTask.status = prev;
@@ -1975,6 +2013,7 @@ $("c-save").onclick = async () => {
     // Ehtiyot chorasi: ayni paytda board qayta yuklangan bo'lsa, ikki nusxa paydo bo'lmasin
     if (!boardData.tasks.some((t) => t.id === res.task.id)) boardData.tasks.unshift(res.task);
     rebuildBoard();
+    writeBoardCache(boardData);
     renderNav();
   } catch (err) {
     hapticNotify("error");

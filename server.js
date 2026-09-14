@@ -129,6 +129,34 @@ function cached(ttlMs, fn) {
   return wrapped;
 }
 
+// Bir foydalanuvchi Mini App'ni ketma-ket ochganda Notion'ga bir xil og'ir
+// so'rovni qayta yubormaymiz. Mutatsiyalarda kesh tozalanadi.
+const BOARD_CACHE_TTL_MS = 45 * 1000;
+const boardCache = new Map();
+
+async function cachedBoard(requester, designers) {
+  const key = `${requester.isManager ? "manager" : "designer"}:${requester.id}`;
+  const hit = boardCache.get(key);
+  if (hit?.value && Date.now() - hit.at < BOARD_CACHE_TTL_MS) return hit.value;
+  if (hit?.inflight) return hit.inflight;
+
+  const entry = hit || {};
+  entry.inflight = buildBoard(requester, designers)
+    .then((value) => {
+      entry.value = value;
+      entry.at = Date.now();
+      return value;
+    })
+    .finally(() => { entry.inflight = null; });
+  boardCache.set(key, entry);
+  return entry.inflight;
+}
+
+function clearBoardCache() {
+  boardCache.clear();
+  getAllTaskPages.clear();
+}
+
 async function queryAll(database_id, extra) {
   const results = [];
   let cursor;
@@ -141,6 +169,10 @@ async function queryAll(database_id, extra) {
   } while (cursor);
   return results;
 }
+
+// Art direktor ko'rinishi butun bazani talab qiladi. Natijani qisqa vaqt
+// saqlaymiz va server startida oldindan yuklaymiz.
+const getAllTaskPages = cached(45 * 1000, () => queryAll(TASK_DB_ID));
 
 function titleOf(page) {
   const prop = Object.values(page.properties || {}).find((p) => p.type === "title");
@@ -240,8 +272,13 @@ function formatTask(page, designers, projects) {
 }
 
 async function buildBoard(requester, designers) {
+  // Dizayner uchun Notion'ning o'zida filtrlash eng katta tezlik yutug'i:
+  // oldin butun Tasks bazasi yuklanib, keyin Node ichida ajratilar edi.
+  const taskQuery = requester.isManager
+    ? undefined
+    : { filter: { property: "Designers", relation: { contains: requester.id } } };
   const [schema, projects, pages] = await Promise.all([
-    getSchema(), getProjects(), queryAll(TASK_DB_ID),
+    getSchema(), getProjects(), requester.isManager ? getAllTaskPages() : queryAll(TASK_DB_ID, taskQuery),
   ]);
 
   const tasks = [];
@@ -278,7 +315,8 @@ app.get("/api/board", async (req, res) => {
   try {
     const auth = await requireUser(req, res);
     if (!auth) return;
-    res.json(await buildBoard(auth.requester, auth.designers));
+    res.set("Cache-Control", "private, no-store, max-age=0");
+    res.json(await cachedBoard(auth.requester, auth.designers));
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Server xatoligi: " + err.message });
@@ -462,6 +500,7 @@ app.patch("/api/task/:id/status", async (req, res) => {
 
     const value = schema.statusType === "select" ? { select: { name: status } } : { status: { name: status } };
     await notion.pages.update({ page_id: req.params.id, properties: { Status: value } });
+    clearBoardCache();
 
     res.json({ ok: true, status });
   } catch (err) {
@@ -514,6 +553,7 @@ app.post("/api/tasks", async (req, res) => {
     }
 
     const page = await notion.pages.create({ parent: { database_id: TASK_DB_ID }, properties });
+    clearBoardCache();
     const projects = await getProjects();
     res.json({ ok: true, task: formatTask(page, designers, projects) });
   } catch (err) {
@@ -564,6 +604,11 @@ async function sendWelcome(chatId) {
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, async () => {
   console.log(`Server ${PORT}-portda ishga tushdi`);
+  // Birinchi haqiqiy foydalanuvchi schema/designers/projects sovuq startini
+  // kutib qolmasligi uchun server ishga tushishi bilan yengil ma'lumotlarni isitib olamiz.
+  Promise.all([getDesigners(), getSchema(), getProjects(), getAllTaskPages()])
+    .then(() => console.log("Notion keshlari tayyor"))
+    .catch((e) => console.error("Notion keshini tayyorlashda xato:", e.message));
   if (!BOT_TOKEN) {
     console.log("BOT_TOKEN yo'q - bot o'chirilgan va initData tekshirilmaydi (faqat lokal rejim).");
   } else if (ALLOW_INSECURE) {
