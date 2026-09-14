@@ -688,6 +688,24 @@ function managerTaskLine(task, todayKey) {
   return `• <b>${htmlEscape(shortText(task.name))}</b> — ${htmlEscape(taskNames(task))}, ${dueText(delta, false)}`;
 }
 
+function designerSummary(hour, total, overdueCount, todayCount) {
+  const counts = [
+    overdueCount ? `${overdueCount} ta kechikkan` : "",
+    todayCount ? `${todayCount} ta bugun` : "",
+  ].filter(Boolean).join(", ");
+  if (hour === 8) {
+    if (total === 1 && overdueCount === 1) return "Bugun sizda 1 ta muhim task bor. Uning muddati o'tgan.";
+    if (total === 1) return "Bugun sizda 1 ta muhim task bor. Uning muddati bugun.";
+    return `Bugun sizda ${total} ta muhim task bor: ${counts}.`;
+  }
+  if (hour === 14) {
+    if (overdueCount === total) return `Sizda ${total} ta kechikkan task ochiq turibdi.`;
+    return `Sizda ${total} ta muhim task ochiq turibdi: ${counts}.`;
+  }
+  if (total === 1 && overdueCount === 1) return "Sizda 1 ta task ochiq qoldi. Uning muddati o'tgan.";
+  return `Sizda ${total} ta task ochiq qoldi: ${counts}.`;
+}
+
 function designerMessage(designer, tasks, hour, todayKey) {
   const relevant = sortNotificationTasks(tasks.filter((task) => {
     const delta = deadlineDelta(task, todayKey);
@@ -697,15 +715,12 @@ function designerMessage(designer, tasks, hour, todayKey) {
 
   const overdue = relevant.filter((task) => deadlineDelta(task, todayKey) < 0);
   const dueToday = relevant.filter((task) => deadlineDelta(task, todayKey) === 0);
-  const summary = [
-    overdue.length ? `${overdue.length} ta kechikkan` : "",
-    dueToday.length ? `${dueToday.length} ta bugun` : "",
-  ].filter(Boolean).join(", ");
-  const lines = [
-    `Assalomu alaykum @${htmlEscape(designer.username)}, ${greetingForHour(hour)}!`,
-    "",
-    `Sizda ${relevant.length} ta muhim task bor: ${summary}.`,
-  ];
+  const intro = hour === 8
+    ? `Assalomu alaykum @${htmlEscape(designer.username)}, ${greetingForHour(hour)}!`
+    : hour === 14
+      ? `@${htmlEscape(designer.username)}, 14:00 holati:`
+      : `@${htmlEscape(designer.username)}, kun yakuni:`;
+  const lines = [intro, "", designerSummary(hour, relevant.length, overdue.length, dueToday.length)];
 
   if (overdue.length) {
     lines.push("", "<b>Kechikkan:</b>", "", ...overdue.slice(0, 6).map((task) => designerTaskLine(task, todayKey)));
@@ -716,11 +731,11 @@ function designerMessage(designer, tasks, hour, todayKey) {
 
   const first = relevant[0];
   if (hour === 8) {
-    lines.push("", `<b>✅ Bugungi vazifa:</b> ${htmlEscape(shortText(first.name))} taskini birinchi navbatda yakunlang${overdue.includes(first) ? ", u allaqachon kechikkan" : ""}.`);
+    lines.push("", "<b>✅ Bugungi fokus:</b>", "", `• ${htmlEscape(shortText(first.name))} taskini birinchi navbatda yakunlang. Agar muammo bo'lsa, holatini yozib qoldiring.`);
   } else if (hour === 14) {
-    lines.push("", `<b>✅ 14:00 update:</b> ${htmlEscape(shortText(first.name))} bo'yicha holatni tekshiring va statusni yangilang.`);
+    lines.push("", "<b>✅ Keyingi qadam:</b>", "", `• ${htmlEscape(shortText(first.name))} taski qaysi bosqichda ekanini tekshiring va statusini yangilang.`);
   } else {
-    lines.push("", `<b>✅ Kun yakuni:</b> Tugallanmagan ishlarning statusini yangilang va ${htmlEscape(shortText(first.name))} bo'yicha natijani belgilang.`);
+    lines.push("", "<b>✅ Yakunlashdan oldin:</b>", "", "• Ish tayyor bo'lsa topshiring. Ulgurmagan bo'lsangiz, muammoni va keyingi qadamni yozib qoldiring.");
   }
   return lines.join("\n");
 }
@@ -750,12 +765,17 @@ function managerMessage(manager, tasks, hour, todayKey) {
   }), todayKey);
   if (!relevant.length) return null;
 
-  const lines = [
-    `Assalomu alaykum @${htmlEscape(manager.username)}, ${greetingForHour(hour)}!`,
-    hour === 20
-      ? `Bugun ${relevant.length} ta ish hali e'tibor talab qilmoqda.`
-      : `Bugun ${relevant.length} ta ish mijozga ketishi yoki yopilishi kerak 🚀`,
-  ];
+  const intro = hour === 8
+    ? `Assalomu alaykum @${htmlEscape(manager.username)}, ${greetingForHour(hour)}!`
+    : hour === 14
+      ? `@${htmlEscape(manager.username)}, 14:00 holati:`
+      : `@${htmlEscape(manager.username)}, kun yakuni:`;
+  const summary = hour === 8
+    ? `Bugun ${relevant.length} ta ish e'tibor talab qiladi 🚀`
+    : hour === 14
+      ? `${relevant.length} ta ish hali e'tibor talab qilmoqda.`
+      : `${relevant.length} ta ish ochiq qoldi.`;
+  const lines = [intro, "", summary];
 
   for (const section of MANAGER_NOTIFICATION_SECTIONS) {
     const sectionTasks = relevant.filter((task) => section.statuses.has(task.status));
@@ -763,9 +783,16 @@ function managerMessage(manager, tasks, hour, todayKey) {
     lines.push("", `<b>${section.title}:</b>`, "", ...sectionTasks.slice(0, 5).map((task) => managerTaskLine(task, todayKey)));
   }
 
-  const actions = relevant.slice(0, 3);
-  lines.push("", hour === 14 ? "<b>14:00 update:</b>" : hour === 20 ? "<b>Kun yakuni:</b>" : "<b>Bugungi vazifalar:</b>", "");
-  lines.push(...actions.map((task, index) => managerAction(task, todayKey, index + 1)));
+  if (hour === 20) {
+    lines.push("", "<b>✅ Yakunlashdan oldin:</b>", "",
+      "1. Bajarilgan tasklarni yoping.",
+      "2. Qolgan tasklarning statusini yangilang.",
+      "3. Muammo bor ishlar uchun keyingi qadamni belgilang.");
+  } else {
+    const actions = relevant.slice(0, 3);
+    lines.push("", hour === 14 ? "<b>✅ Keyingi qadamlar:</b>" : "<b>✅ Bugungi vazifalar:</b>", "");
+    lines.push(...actions.map((task, index) => managerAction(task, todayKey, index + 1)));
+  }
   return lines.join("\n");
 }
 
