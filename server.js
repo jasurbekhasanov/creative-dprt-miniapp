@@ -12,6 +12,9 @@ require("dotenv").config();
 const BOT_TOKEN = process.env.BOT_TOKEN;
 const APP_URL = process.env.APP_URL || "https://creative-dprt-miniapp-production.up.railway.app";
 const TG_API = BOT_TOKEN ? `https://api.telegram.org/bot${BOT_TOKEN}` : null;
+const NOTIFICATION_CHAT_ID = process.env.NOTIFICATION_CHAT_ID || null;
+const MINI_APP_LINK = process.env.MINI_APP_LINK || "https://t.me/crdprt_bot/tasks";
+const NOTIFICATION_TIMEZONE = "Asia/Tashkent";
 
 // Faqat lokal ishlab chiqish uchun: imzosiz ?username= bilan kirishga ruxsat
 const ALLOW_INSECURE = process.env.ALLOW_INSECURE_USERNAME === "1";
@@ -597,6 +600,248 @@ app.get("/api/content/:page", (req, res) => {
 });
 
 /* ==========================================================================
+   Kunlik Telegram eslatmalari
+   08:00, 14:00 va 20:00 — Asia/Tashkent. Xabarlar Tasks guruhiga yuboriladi.
+   ========================================================================== */
+const NOTIFICATION_HOURS = new Set([8, 14, 20]);
+const DESIGNER_WORK_STATUSES = new Set(["Draft", "G'oya kerak", "Dizaynda"]);
+const CLOSED_STATUSES = new Set(["Finish", "Archive"]);
+const sentNotificationSlots = new Set();
+let notificationRunInFlight = false;
+
+function htmlEscape(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function shortText(value, limit = 90) {
+  const text = String(value ?? "").trim();
+  return text.length > limit ? text.slice(0, limit - 1) + "…" : text;
+}
+
+function notificationClock(date = new Date()) {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: NOTIFICATION_TIMEZONE,
+    year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", hourCycle: "h23",
+  }).formatToParts(date);
+  const get = (type) => parts.find((p) => p.type === type)?.value || "";
+  return {
+    date: `${get("year")}-${get("month")}-${get("day")}`,
+    hour: Number(get("hour")),
+    minute: Number(get("minute")),
+  };
+}
+
+function dateSerial(dateKey) {
+  const [year, month, day] = String(dateKey).slice(0, 10).split("-").map(Number);
+  return Number.isFinite(year + month + day) ? Date.UTC(year, month - 1, day) : NaN;
+}
+
+function deadlineDelta(task, todayKey) {
+  if (!task.dedlayn) return null;
+  const due = dateSerial(task.dedlayn);
+  const today = dateSerial(todayKey);
+  return Number.isFinite(due) && Number.isFinite(today) ? Math.round((due - today) / 86400000) : null;
+}
+
+function notificationPriority(task) {
+  const value = String(task.prioritet || "").toLowerCase();
+  if (value.includes("urgent")) return 0;
+  if (value.includes("high")) return 1;
+  return 2;
+}
+
+function sortNotificationTasks(tasks, todayKey) {
+  return tasks.slice().sort((a, b) => {
+    const ad = deadlineDelta(a, todayKey), bd = deadlineDelta(b, todayKey);
+    if (ad !== bd) return (ad ?? 9999) - (bd ?? 9999);
+    return notificationPriority(a) - notificationPriority(b);
+  });
+}
+
+function greetingForHour(hour) {
+  return hour === 8 ? "xayrli tong" : hour === 20 ? "xayrli kech" : "xayrli kun";
+}
+
+function dueText(delta, designerStyle) {
+  if (delta === 0) return "bugun 🚀";
+  const days = Math.abs(delta);
+  return designerStyle ? `${days} kun kechikkan` : `${days} kun o'tdi${days <= 2 ? " 🚀" : ""}`;
+}
+
+function taskNames(task) {
+  return shortText(task.designers.map((d) => d.name).filter(Boolean).join(", ") || "Dizayner biriktirilmagan", 80);
+}
+
+function designerTaskLine(task, todayKey) {
+  const delta = deadlineDelta(task, todayKey);
+  const project = task.projectName ? ` — ${htmlEscape(shortText(task.projectName, 55))}` : "";
+  return `• <b>${htmlEscape(shortText(task.name))}</b>${project}, ${dueText(delta, true)}`;
+}
+
+function managerTaskLine(task, todayKey) {
+  const delta = deadlineDelta(task, todayKey);
+  return `• <b>${htmlEscape(shortText(task.name))}</b> — ${htmlEscape(taskNames(task))}, ${dueText(delta, false)}`;
+}
+
+function designerMessage(designer, tasks, hour, todayKey) {
+  const relevant = sortNotificationTasks(tasks.filter((task) => {
+    const delta = deadlineDelta(task, todayKey);
+    return DESIGNER_WORK_STATUSES.has(task.status) && delta !== null && delta <= 0;
+  }), todayKey);
+  if (!relevant.length) return null;
+
+  const overdue = relevant.filter((task) => deadlineDelta(task, todayKey) < 0);
+  const dueToday = relevant.filter((task) => deadlineDelta(task, todayKey) === 0);
+  const summary = [
+    overdue.length ? `${overdue.length} ta kechikkan` : "",
+    dueToday.length ? `${dueToday.length} ta bugun` : "",
+  ].filter(Boolean).join(", ");
+  const lines = [
+    `Assalomu alaykum @${htmlEscape(designer.username)}, ${greetingForHour(hour)}!`,
+    "",
+    `Sizda ${relevant.length} ta muhim task bor: ${summary}.`,
+  ];
+
+  if (overdue.length) {
+    lines.push("", "<b>Kechikkan:</b>", "", ...overdue.slice(0, 6).map((task) => designerTaskLine(task, todayKey)));
+  }
+  if (dueToday.length) {
+    lines.push("", "<b>Bugun:</b>", "", ...dueToday.slice(0, 6).map((task) => designerTaskLine(task, todayKey)));
+  }
+
+  const first = relevant[0];
+  if (hour === 8) {
+    lines.push("", `<b>✅ Bugungi vazifa:</b> ${htmlEscape(shortText(first.name))} taskini birinchi navbatda yakunlang${overdue.includes(first) ? ", u allaqachon kechikkan" : ""}.`);
+  } else if (hour === 14) {
+    lines.push("", `<b>✅ 14:00 update:</b> ${htmlEscape(shortText(first.name))} bo'yicha holatni tekshiring va statusni yangilang.`);
+  } else {
+    lines.push("", `<b>✅ Kun yakuni:</b> Tugallanmagan ishlarning statusini yangilang va ${htmlEscape(shortText(first.name))} bo'yicha natijani belgilang.`);
+  }
+  return lines.join("\n");
+}
+
+const MANAGER_NOTIFICATION_SECTIONS = [
+  { title: "G'oya/tasdiq kerak", statuses: new Set(["G'oya kerak", "Tasdiqlanyapti"]) },
+  { title: "Dizaynerda", statuses: new Set(["Draft", "Dizaynda"]) },
+  { title: "Art direktorda", statuses: new Set(["Art direktorda"]) },
+  { title: "Mijozda", statuses: new Set(["Mijozda"]) },
+];
+
+function managerAction(task, todayKey, index) {
+  const delta = deadlineDelta(task, todayKey);
+  const late = delta < 0 ? `, ${Math.abs(delta)} kundan beri kechikkan` : "";
+  const designer = htmlEscape(taskNames(task));
+  const name = htmlEscape(shortText(task.name));
+  if (task.status === "Mijozda") return `${index}. ${name} taskini mijozdan qayta so'rang${late}.`;
+  if (task.status === "Art direktorda") return `${index}. ${name} uchun ${designer}ga fidbek bering${late}.`;
+  if (task.status === "Dizaynda" || task.status === "Draft") return `${index}. ${name} bo'yicha ${designer} bilan holatni tekshiring${late}.`;
+  return `${index}. ${name} bo'yicha g'oya yoki tasdiq jarayonini yakunlang${late}.`;
+}
+
+function managerMessage(manager, tasks, hour, todayKey) {
+  const relevant = sortNotificationTasks(tasks.filter((task) => {
+    const delta = deadlineDelta(task, todayKey);
+    return !CLOSED_STATUSES.has(task.status) && delta !== null && delta <= 0;
+  }), todayKey);
+  if (!relevant.length) return null;
+
+  const lines = [
+    `Assalomu alaykum @${htmlEscape(manager.username)}, ${greetingForHour(hour)}!`,
+    hour === 20
+      ? `Bugun ${relevant.length} ta ish hali e'tibor talab qilmoqda.`
+      : `Bugun ${relevant.length} ta ish mijozga ketishi yoki yopilishi kerak 🚀`,
+  ];
+
+  for (const section of MANAGER_NOTIFICATION_SECTIONS) {
+    const sectionTasks = relevant.filter((task) => section.statuses.has(task.status));
+    if (!sectionTasks.length) continue;
+    lines.push("", `<b>${section.title}:</b>`, "", ...sectionTasks.slice(0, 5).map((task) => managerTaskLine(task, todayKey)));
+  }
+
+  const actions = relevant.slice(0, 3);
+  lines.push("", hour === 14 ? "<b>14:00 update:</b>" : hour === 20 ? "<b>Kun yakuni:</b>" : "<b>Bugungi vazifalar:</b>", "");
+  lines.push(...actions.map((task, index) => managerAction(task, todayKey, index + 1)));
+  return lines.join("\n");
+}
+
+async function sendGroupNotification(text) {
+  const response = await fetch(`${TG_API}/sendMessage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      chat_id: NOTIFICATION_CHAT_ID,
+      text,
+      parse_mode: "HTML",
+      disable_web_page_preview: true,
+      reply_markup: { inline_keyboard: [[{ text: "Topshiriqlar", url: MINI_APP_LINK }]] },
+    }),
+  });
+  const result = await response.json();
+  if (!result.ok) throw new Error(result.description || "Telegram xabarni qabul qilmadi");
+}
+
+async function runDailyNotifications(hour, todayKey) {
+  const [designers, projects, pages] = await Promise.all([
+    getDesigners(),
+    getProjects(),
+    getAllTaskPages(),
+  ]);
+  const tasks = pages.map((page) => formatTask(page, designers, projects));
+  const people = Object.values(designers).filter((person) => person.active && person.username);
+  const messages = [];
+
+  for (const person of people.filter((person) => !MANAGER_DEGREES.includes(person.degree))) {
+    const mine = tasks.filter((task) => task.designers.some((designer) => designer.id === person.id));
+    const text = designerMessage(person, mine, hour, todayKey);
+    if (text) messages.push(text);
+  }
+  for (const manager of people.filter((person) => MANAGER_DEGREES.includes(person.degree))) {
+    const text = managerMessage(manager, tasks, hour, todayKey);
+    if (text) messages.push(text);
+  }
+
+  for (let index = 0; index < messages.length; index += 1) {
+    await sendGroupNotification(messages[index]);
+    if (index < messages.length - 1) await new Promise((resolve) => setTimeout(resolve, 1100));
+  }
+  console.log(`Kunlik ${hour}:00 xabari: ${messages.length} ta xabar yuborildi`);
+}
+
+async function checkNotificationSchedule() {
+  if (!TG_API || !NOTIFICATION_CHAT_ID || notificationRunInFlight) return;
+  const now = notificationClock();
+  if (!NOTIFICATION_HOURS.has(now.hour) || now.minute > 2) return;
+  const slotKey = `${now.date}:${now.hour}`;
+  if (sentNotificationSlots.has(slotKey)) return;
+
+  sentNotificationSlots.add(slotKey);
+  notificationRunInFlight = true;
+  try {
+    await runDailyNotifications(now.hour, now.date);
+  } catch (error) {
+    console.error(`Kunlik ${now.hour}:00 xabarida xato:`, error.message);
+  } finally {
+    notificationRunInFlight = false;
+    for (const key of sentNotificationSlots) if (!key.startsWith(now.date + ":")) sentNotificationSlots.delete(key);
+  }
+}
+
+function startNotificationScheduler() {
+  if (!TG_API || !NOTIFICATION_CHAT_ID) {
+    console.log("Kunlik Telegram eslatmalari o'chirilgan (NOTIFICATION_CHAT_ID yo'q). ");
+    return;
+  }
+  console.log("Kunlik Telegram eslatmalari: 08:00, 14:00, 20:00 (Asia/Tashkent)");
+  setTimeout(checkNotificationSchedule, 1500);
+  setInterval(checkNotificationSchedule, 30 * 1000).unref();
+}
+
+/* ==========================================================================
    Telegram webhook
    ========================================================================== */
 app.post("/webhook", async (req, res) => {
@@ -634,6 +879,7 @@ app.listen(PORT, async () => {
   Promise.all([getDesigners(), getSchema(), getProjects(), getAllTaskPages()])
     .then(() => console.log("Notion keshlari tayyor"))
     .catch((e) => console.error("Notion keshini tayyorlashda xato:", e.message));
+  startNotificationScheduler();
   if (!BOT_TOKEN) {
     console.log("BOT_TOKEN yo'q - bot o'chirilgan va initData tekshirilmaydi (faqat lokal rejim).");
   } else if (ALLOW_INSECURE) {
