@@ -54,9 +54,46 @@ test("dizayner ertalab vaziyatni, 14:00 va 20:00 da faqat keyingi qadamni oladi"
   assert.match(midday, /Diqqat.*Bir martalik ishlar.*kechikyapti/);
   assert.match(midday, /art direktorga yozib yuboring/);
   assert.doesNotMatch(midday, /Kechikkan:|Bugun:|Assalomu alaykum/);
+  assert.doesNotMatch(midday, /14:00|20:00/);
   assert.match(evening, /hali art direktorga topshirilmagan/);
   assert.match(evening, /holatini va keyingi qadamni yozib qoldiring/);
   assert.doesNotMatch(evening, /Kechikkan:|Bugun:|Assalomu alaykum/);
+  assert.doesNotMatch(evening, /14:00|20:00/);
+});
+
+test("ochiq ishi yo'q dizayner va art direktor bezovta qilinmaydi", () => {
+  const designer = { username: "rustamovpro" };
+  const manager = { username: "komron_toshkanov" };
+  const finished = { ...diqqat, status: "Finish" };
+  const withClient = { ...diqqat, status: "Mijozda" };
+  for (const hour of [8, 14, 20]) {
+    assert.equal(designerMessage(designer, [], hour, today), null);
+    assert.equal(designerMessage(designer, [finished], hour, today), null);
+    assert.equal(designerMessage(designer, [withClient], hour, today), null);
+    assert.equal(managerMessage(manager, [], hour, today), null);
+    assert.equal(managerMessage(manager, [finished], hour, today), null);
+  }
+  const people = {
+    designer: { id: sirojId, name: "Siroj", username: "rustamovpro", degree: "Designer", active: true },
+    manager: { id: komronId, name: "Komron", username: "komron_toshkanov", degree: "Art director", active: true },
+  };
+  assert.deepEqual(buildDailyNotificationMessages(people, [finished], 14, today), []);
+});
+
+test("Art direktorda statusida dizaynerga fidbek so'rash aytiladi, yakunlash bosimi qo'yilmaydi", () => {
+  const person = { username: "rustamovpro" };
+  const waiting = { ...diqqat, status: "Art direktorda" };
+  const futureReview = { ...waiting, dedlayn: "2026-09-17" };
+  for (const hour of [8, 14, 20]) {
+    const message = designerMessage(person, [waiting], hour, today);
+    assert.match(message, /Art direktorda|art direktorda/);
+    assert.match(message, /Art direktordan fidbek so‘rang|art direktordan so‘rang/);
+    assert.doesNotMatch(message, /birinchi navbatda yakunlang|hali art direktorga topshirilmagan|kechikyapti/);
+    assert.match(designerMessage(person, [futureReview], hour, today), /fidbek so‘rang|art direktordan so‘rang/);
+  }
+  const workAndReview = designerMessage(person, [diqqat, waiting], 14, today);
+  assert.match(workAndReview, /Diqqat.*kechikyapti/);
+  assert.match(workAndReview, /art direktorda[\s\S]*fidbek so‘rang/);
 });
 
 test("art direktor ertalab barcha ochiq ishni, keyin faqat amaliy qadamlarni ko'radi", () => {
@@ -76,8 +113,11 @@ test("art direktor ertalab barcha ochiq ishni, keyin faqat amaliy qadamlarni ko'
   assert.match(midday, /Fidbek[\s\S]*fidbek bering/);
   assert.match(midday, /Mijoz javobi[\s\S]*Mijozdan javobni so‘rang/);
   assert.doesNotMatch(midday, /Keyingi hafta|G'oya\/tasdiq kerak:|Nazoratda 4/);
+  assert.doesNotMatch(midday, /14:00|20:00/);
   assert.match(evening, /ertangi qadamni belgilang/);
   assert.doesNotMatch(evening, /G'oya\/tasdiq kerak:|Nazoratda 4/);
+  assert.doesNotMatch(evening, /14:00|20:00/);
+  assert.equal(managerMessage(person, [{ ...diqqat, dedlayn: "2026-09-17" }], 14, today), null);
 });
 
 test("Telegram xabari alohida topic ID siz General mavzusiga jo'natiladi", async () => {

@@ -711,27 +711,23 @@ function managerTaskLine(task, todayKey) {
   return `• <b>${htmlEscape(shortText(task.name))}</b> — ${htmlEscape(taskNames(task))}, ${dueText(delta, false)}`;
 }
 
-function designerSummary(hour, total, overdueCount, todayCount) {
+function designerSummary(total, overdueCount, todayCount) {
   const counts = [
     overdueCount ? `${overdueCount} ta kechikkan` : "",
     todayCount ? `${todayCount} ta bugun` : "",
   ].filter(Boolean).join(", ");
-  if (hour === 8) {
-    if (total === 1 && overdueCount === 1) return "Bugun sizda 1 ta muhim task bor. Uning muddati o'tgan.";
-    if (total === 1) return "Bugun sizda 1 ta muhim task bor. Uning muddati bugun.";
-    return `Bugun sizda ${total} ta muhim task bor: ${counts}.`;
-  }
-  if (hour === 14) {
-    if (overdueCount === total) return `Sizda ${total} ta kechikkan task ochiq turibdi.`;
-    return `Sizda ${total} ta muhim task ochiq turibdi: ${counts}.`;
-  }
-  if (total === 1 && overdueCount === 1) return "Sizda 1 ta task ochiq qoldi. Uning muddati o'tgan.";
-  return `Sizda ${total} ta task ochiq qoldi: ${counts}.`;
+  if (total === 1 && overdueCount === 1) return "Bugun sizda 1 ta muhim task bor. Uning muddati o'tgan.";
+  if (total === 1) return "Bugun sizda 1 ta muhim task bor. Uning muddati bugun.";
+  return `Bugun sizda ${total} ta muhim task bor: ${counts}.`;
 }
 
 function designerMessage(designer, tasks, hour, todayKey) {
-  const mine = sortNotificationTasks(tasks.filter((task) => DESIGNER_WORK_STATUSES.has(task.status)), todayKey);
-  const relevant = mine.filter((task) => {
+  const mine = sortNotificationTasks(tasks.filter((task) =>
+    DESIGNER_WORK_STATUSES.has(task.status) || task.status === "Art direktorda"), todayKey);
+  if (!mine.length) return null;
+  const work = mine.filter((task) => DESIGNER_WORK_STATUSES.has(task.status));
+  const review = mine.filter((task) => task.status === "Art direktorda");
+  const relevant = work.filter((task) => {
     const delta = deadlineDelta(task, todayKey);
     return delta !== null && delta <= 0;
   });
@@ -740,29 +736,40 @@ function designerMessage(designer, tasks, hour, todayKey) {
   const dueToday = relevant.filter((task) => deadlineDelta(task, todayKey) === 0);
   if (hour === 8) {
     const lines = [`Assalomu alaykum @${htmlEscape(designer.username)}, ${greetingForHour(hour)}!`];
-    if (!relevant.length) {
-      lines.push("", mine.length
-        ? "Bugun muddati kelgan yoki kechikkan task yo‘q. Rejadagi ishlarni davom ettiring."
-        : "Hozir sizga biriktirilgan ochiq task yo‘q.");
-      return lines.join("\n");
+    if (relevant.length) {
+      lines.push("", designerSummary(relevant.length, overdue.length, dueToday.length));
+      if (overdue.length) lines.push("", "<b>Kechikkan:</b>", ...overdue.slice(0, 6).map((task) => designerTaskLine(task, todayKey)));
+      if (dueToday.length) lines.push("", "<b>Bugun:</b>", ...dueToday.slice(0, 6).map((task) => designerTaskLine(task, todayKey)));
+      const first = relevant[0];
+      lines.push("", "<b>Bugungi fokus:</b>", `${htmlEscape(shortText(first.name))} taskini birinchi navbatda yakunlang. Muammo bo‘lsa, art direktorga yozing.`);
+    } else if (work.length) {
+      lines.push("", "<b>Rejadagi ishlar:</b>", ...work.slice(0, 3).map((task) => designerTaskLine(task, todayKey)));
     }
-    lines.push("", designerSummary(hour, relevant.length, overdue.length, dueToday.length));
-    if (overdue.length) lines.push("", "<b>Kechikkan:</b>", ...overdue.slice(0, 6).map((task) => designerTaskLine(task, todayKey)));
-    if (dueToday.length) lines.push("", "<b>Bugun:</b>", ...dueToday.slice(0, 6).map((task) => designerTaskLine(task, todayKey)));
-    const first = relevant[0];
-    lines.push("", "<b>Bugungi fokus:</b>", `${htmlEscape(shortText(first.name))} taskini birinchi navbatda yakunlang. Muammo bo‘lsa, art direktorga yozing.`);
+    if (review.length) {
+      lines.push("", "<b>Art direktorda:</b>", ...review.slice(0, 3).map((task) => {
+        const project = task.projectName ? ` — ${htmlEscape(shortText(task.projectName, 55))}` : "";
+        return `• <b>${htmlEscape(shortText(task.name))}</b>${project}. Art direktordan fidbek so‘rang.`;
+      }));
+    }
     return lines.join("\n");
   }
 
   const intro = hour === 14
-    ? `@${htmlEscape(designer.username)}, 14:00 — keyingi qadam:`
+    ? `@${htmlEscape(designer.username)}, keyingi qadam:`
     : `@${htmlEscape(designer.username)}, kun yakuni — keyingi qadam:`;
-  const followUps = relevant.length ? relevant.slice(0, 3) : mine.slice(0, 1);
-  if (!followUps.length) return `${intro}\n\nHozir sizga biriktirilgan ochiq task yo‘q.`;
+  const followUps = relevant.length ? relevant.slice(0, 2) : work.slice(0, 1);
+  if (review.length) followUps.push(review[0]);
   const lines = [intro];
   for (const task of followUps) {
     const title = htmlEscape(shortText(task.name));
     const project = task.projectName ? ` — ${htmlEscape(shortText(task.projectName, 55))}` : "";
+    if (task.status === "Art direktorda") {
+      lines.push("", `<b>${title}${project}</b> art direktorda.`,
+        hour === 14
+          ? "Art direktordan fidbek so‘rang va keyingi qadamni kelishib oling."
+          : "Fidbek kelmagan bo‘lsa, art direktordan so‘rang va keyingi qadamni yozib qoldiring.");
+      continue;
+    }
     const delta = deadlineDelta(task, todayKey);
     if (hour === 14) {
       const situation = delta < 0 ? "kechikyapti" : delta === 0 ? "bugun tugashi kerak" : "jarayonda";
@@ -800,6 +807,7 @@ function managerNextStep(task, hour) {
 
 function managerMessage(manager, tasks, hour, todayKey) {
   const active = sortNotificationTasks(tasks.filter((task) => !CLOSED_STATUSES.has(task.status)), todayKey);
+  if (!active.length) return null;
   const relevant = active.filter((task) => {
     const delta = deadlineDelta(task, todayKey);
     return delta !== null && delta <= 0;
@@ -807,7 +815,6 @@ function managerMessage(manager, tasks, hour, todayKey) {
 
   if (hour === 8) {
     const greeting = `Assalomu alaykum @${htmlEscape(manager.username)}, ${greetingForHour(hour)}!`;
-    if (!active.length) return `${greeting}\n\nBugun nazoratda ochiq ish yo‘q.`;
     const lateCount = relevant.filter((task) => deadlineDelta(task, todayKey) < 0).length;
     const todayCount = relevant.length - lateCount;
     const lines = [greeting, "",
@@ -828,11 +835,11 @@ function managerMessage(manager, tasks, hour, todayKey) {
   }
 
   const intro = hour === 14
-    ? `@${htmlEscape(manager.username)}, 14:00 — keyingi qadamlar:`
+    ? `@${htmlEscape(manager.username)}, keyingi qadamlar:`
     : `@${htmlEscape(manager.username)}, kun yakuni — keyingi qadamlar:`;
   const followUps = relevant.length ? relevant.slice(0, 3) : active.filter((task) =>
     ["G'oya kerak", "Tasdiqlanyapti", "Art direktorda", "Mijozda"].includes(task.status)).slice(0, 1);
-  if (!followUps.length) return `${intro}\n\nHozir sizdan qaror kutayotgan yoki muddati kelgan ish yo‘q.`;
+  if (!followUps.length) return null;
   const lines = [intro];
   for (const task of followUps) {
     const delta = deadlineDelta(task, todayKey);
